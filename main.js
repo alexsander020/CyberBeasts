@@ -1,33 +1,87 @@
 import { GameGrid } from './src/core/grid.js';
 import { DataWheel } from './src/core/dataWheel.js';
-import { CyberBeast, CLASS_STATS } from './src/entities/cyberbeast.js';
+import { GameState } from './src/core/gameState.js';
+import { CyberBeast, INITIAL_BEASTS } from './src/entities/cyberbeast.js';
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('CyberBeasts: Core Conquest - Inicializado na Floresta Cyber');
+    console.log('CyberBeasts: Kernel v2.1 Initialized');
 
-    // Inicializa o Grid de Nodos
-    const grid = new GameGrid();
+    const state = new GameState();
+    const grid = new GameGrid(state);
     const wheel = new DataWheel();
 
-    // Spawn test units on nodes
-    const alphaStriker = new CyberBeast('Alpha', 'Striker', CLASS_STATS.Striker);
-    const betaTank = new CyberBeast('Beta', 'Tank', CLASS_STATS.Tank);
-    betaTank.isEnemy = true;
+    // Populate Bench
+    INITIAL_BEASTS.forEach(data => {
+        state.addToBench(CyberBeast.fromJSON(data, 'player'), 'player');
+    });
 
-    // Place units on specific nodes (0-9 defined in grid.js)
-    grid.placeUnit(alphaStriker, 5); // Nodo de base (inferior)
-    grid.placeUnit(betaTank, 0);    // Nodo de base (superior)
+    renderBench(state);
 
-    // Botão de Compilar Dados (Next Turn)
-    const nextTurnBtn = document.getElementById('btn-next-turn');
-    if (nextTurnBtn) {
-        nextTurnBtn.addEventListener('click', async () => {
-            const statusPanel = document.getElementById('status-panel');
-            statusPanel.innerHTML = '> SIMULANDO CONFLITO DE DADOS...';
+    // Initial Status Update
+    state.updateUI();
 
-            // Simula um combate
-            const result = await wheel.spin(alphaStriker.wheel);
-            statusPanel.innerHTML = `> ALPHA Striker: ${result}`;
+    // Listen for bench updates (reboots)
+    document.addEventListener('benchUpdated', (e) => {
+        renderBench(e.detail.state);
+    });
+
+    // Spawn Trigger Simulation
+    const btnNext = document.getElementById('btn-next-turn');
+    if (btnNext) btnNext.addEventListener('click', () => state.nextTurn());
+
+    // Plates Modal Logic
+    const btnPlates = document.getElementById('btn-plates');
+    const platesModal = document.getElementById('plates-modal');
+    const platesList = document.getElementById('plates-list');
+
+    if (btnPlates) {
+        btnPlates.addEventListener('click', () => {
+            platesModal.style.display = 'flex';
+            renderPlates(state);
+        });
+    }
+
+    platesModal.addEventListener('click', (e) => {
+        if (e.target === platesModal) platesModal.style.display = 'none';
+    });
+
+    function renderPlates(state) {
+        platesList.innerHTML = '';
+        state.plates.forEach(plate => {
+            const card = document.createElement('div');
+            card.className = 'plate-card';
+            card.innerHTML = `
+                <div class="plate-name">${plate.name}</div>
+                <div class="plate-desc">${plate.desc}</div>
+                <div style="font-size: 1.5rem; text-align: center;">⚡</div>
+            `;
+            card.onclick = () => {
+                console.log(`Using Plate: ${plate.name}`);
+                platesModal.style.display = 'none';
+                // Effect implementation would go here
+            };
+            platesList.appendChild(card);
+        });
+    }
+
+    function renderBench(state) {
+        const benchContainer = document.getElementById('bench-slots');
+        if (!benchContainer) return;
+        benchContainer.innerHTML = '';
+
+        state.playerBench.forEach((unit, index) => {
+            const slot = document.createElement('div');
+            slot.className = 'bench-slot';
+            slot.innerHTML = '👾';
+            slot.title = unit.name;
+            slot.onclick = () => {
+                // Try to spawn at Entry Point 0 or 1
+                const entryId = Math.random() > 0.5 ? 0 : 1;
+                grid.placeUnit(unit, entryId);
+                state.playerBench.splice(index, 1);
+                renderBench(state);
+            };
+            benchContainer.appendChild(slot);
         });
     }
 });

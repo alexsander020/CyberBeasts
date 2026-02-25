@@ -1,95 +1,137 @@
 export class GameGrid {
-    constructor() {
+    constructor(gameState) {
+        this.gameState = gameState;
         this.container = document.getElementById('nodes-layer');
         this.svg = document.getElementById('board-svg');
         this.unitsLayer = document.getElementById('units-layer');
         this.nodes = [];
-        this.connections = [];
-        this.units = [];
+        this.connections = []; // Edges
+        this.units = new Map(); // nodeId -> CyberBeast
         this.init();
     }
 
     init() {
-        // Define a node map that forms a hexagonal/cyber pattern similar to the image
+        // Define a symmetric board based on the GDD (Entry points at corners, Core at center end)
+        // 0-4 Player Side, 5-9 Enemy Side
         this.nodes = [
-            { id: 0, x: 50, y: 10 }, { id: 1, x: 20, y: 30 }, { id: 2, x: 80, y: 30 },
-            { id: 3, x: 20, y: 70 }, { id: 4, x: 80, y: 70 }, { id: 5, x: 50, y: 90 },
-            { id: 6, x: 50, y: 40 }, { id: 7, x: 50, y: 60 }, { id: 8, x: 35, y: 50 },
-            { id: 9, x: 65, y: 50 }
+            { id: 0, x: 30, y: 90, type: 'entry', team: 'player' },
+            { id: 1, x: 70, y: 90, type: 'entry', team: 'player' },
+            { id: 2, x: 50, y: 95, type: 'core', team: 'player' }, // Player's own core
+
+            { id: 3, x: 10, y: 50, type: 'node' },
+            { id: 4, x: 30, y: 50, type: 'node' },
+            { id: 5, x: 50, y: 50, type: 'node' },
+            { id: 6, x: 70, y: 50, type: 'node' },
+            { id: 7, x: 90, y: 50, type: 'node' },
+
+            { id: 8, x: 30, y: 10, type: 'entry', team: 'enemy' },
+            { id: 9, x: 70, y: 10, type: 'entry', team: 'enemy' },
+            { id: 10, x: 50, y: 5, type: 'core', team: 'enemy' } // Enemy core (Goal)
         ];
 
         this.connections = [
-            [0, 1], [0, 2], [1, 3], [2, 4], [3, 5], [4, 5],
-            [1, 6], [2, 6], [3, 7], [4, 7], [6, 8], [6, 9],
-            [7, 8], [7, 9], [8, 9]
+            [0, 3], [0, 4], [1, 6], [1, 7], // Entry connections
+            [3, 4], [4, 5], [5, 6], [6, 7], // Middle line
+            [8, 3], [8, 4], [9, 6], [9, 7], // Enemy Entry connections
+            [4, 10], [5, 10], [6, 10], [2, 4], [2, 5], [2, 6] // Core goal connections
         ];
 
         this.render();
     }
 
     render() {
+        if (!this.container || !this.svg) return;
         this.container.innerHTML = '';
         this.svg.innerHTML = '';
 
-        // Draw Connections
-        this.connections.forEach(([startId, endId]) => {
-            const start = this.nodes.find(n => n.id === startId);
-            const end = this.nodes.find(n => n.id === endId);
-
+        this.connections.forEach(([sId, eId]) => {
+            const s = this.nodes[sId];
+            const e = this.nodes[eId];
             const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-            line.setAttribute("x1", `${start.x}%`);
-            line.setAttribute("y1", `${start.y}%`);
-            line.setAttribute("x2", `${end.x}%`);
-            line.setAttribute("y2", `${end.y}%`);
-            line.setAttribute("stroke", "rgba(255,255,255,0.2)");
+            line.setAttribute("x1", `${s.x}%`); line.setAttribute("y1", `${s.y}%`);
+            line.setAttribute("x2", `${e.x}%`); line.setAttribute("y2", `${e.y}%`);
+            line.setAttribute("stroke", "rgba(0, 242, 255, 0.3)");
             line.setAttribute("stroke-width", "2");
             this.svg.appendChild(line);
         });
 
-        // Draw Nodes
         this.nodes.forEach(node => {
             const el = document.createElement('div');
-            el.className = 'grid-point';
-            el.style.left = `${node.x}%`;
-            el.style.top = `${node.y}%`;
+            el.className = `grid-point ${node.type}`;
+            el.style.left = `${node.x}%`; el.style.top = `${node.y}%`;
             el.dataset.id = node.id;
 
-            el.addEventListener('click', () => this.handleNodeClick(node));
+            if (node.type === 'core') el.style.boxShadow = '0 0 15px #FF0055';
+
+            el.addEventListener('click', () => this.onNodeClick(node));
             this.container.appendChild(el);
         });
     }
 
-    handleNodeClick(node) {
-        const statusPanel = document.getElementById('status-panel');
-        statusPanel.innerHTML = `> NODO ATIVO: ${node.id}<br>> COORDENADAS: [${node.x}, ${node.y}]`;
-
-        // Highlight logic
-        const points = document.querySelectorAll('.grid-point');
-        points.forEach(p => p.style.background = 'white');
-        const active = document.querySelector(`.grid-point[data-id="${node.id}"]`);
-        active.style.background = '#00ffcc';
+    onNodeClick(node) {
+        // Simple move logic or spawn logic
+        console.log(`Node ${node.id} clicked.`);
+        this.checkSurround(node.id);
     }
 
     placeUnit(unit, nodeId) {
-        const node = this.nodes.find(n => n.id === nodeId);
-        unit.currentNode = nodeId;
+        if (this.units.has(nodeId)) {
+            console.warn("Node occupied - Logic for combat trigger goes here.");
+            return;
+        }
 
-        let unitEl = document.getElementById(`unit-${unit.name}`);
+        const node = this.nodes[nodeId];
+        unit.currentNode = nodeId;
+        this.units.set(nodeId, unit);
+
+        let unitEl = document.getElementById(`unit-${unit.uuid}`);
         if (!unitEl) {
             unitEl = document.createElement('div');
-            unitEl.id = `unit-${unit.name}`;
-            unitEl.className = `unit-disc ${unit.isEnemy ? 'enemy' : ''}`;
-            unitEl.innerHTML = `
-                <div class="base"></div>
-                <div class="visual">👾</div>
-                <div class="hp-badge">${unit.hp}</div>
-            `;
+            unitEl.id = `unit-${unit.uuid}`;
+            unitEl.className = `unit-disc ${unit.owner}`;
+            unitEl.innerHTML = `<div class="base"></div><div class="visual">👾</div>`;
             this.unitsLayer.appendChild(unitEl);
         }
 
         unitEl.style.left = `${node.x}%`;
         unitEl.style.top = `${node.y}%`;
+    }
 
-        this.units.push(unit);
+    // 2.2 SYSTEMA DE CERCO (SURROUND)
+    checkSurround(nodeId) {
+        const unit = this.units.get(nodeId);
+        if (!unit) return;
+
+        const neighbors = this.connections
+            .filter(c => c.includes(nodeId))
+            .map(c => c[0] === nodeId ? c[1] : c[0]);
+
+        const allBlocked = neighbors.every(nId => {
+            const neighborUnit = this.units.get(nId);
+            return neighborUnit && neighborUnit.owner !== unit.owner;
+        });
+
+        if (allBlocked && neighbors.length > 0) {
+            console.log(`SURROUND TRIGGERED! ${unit.name} is deleted.`);
+            this.deleteUnit(nodeId);
+        }
+    }
+
+    deleteUnit(nodeId) {
+        const unit = this.units.get(nodeId);
+        if (unit) {
+            const el = document.getElementById(`unit-${unit.uuid}`);
+            if (el) {
+                el.classList.add('deleting');
+                setTimeout(() => {
+                    el.remove();
+                    this.units.delete(nodeId);
+                    this.gameState.moveToDataCenter(unit);
+                }, 600);
+            } else {
+                this.units.delete(nodeId);
+                this.gameState.moveToDataCenter(unit);
+            }
+        }
     }
 }

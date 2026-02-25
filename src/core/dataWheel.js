@@ -1,104 +1,99 @@
 export class DataWheel {
     constructor() {
         this.canvas = document.getElementById('wheel-canvas');
-        if (!this.canvas) return;
-        this.ctx = this.canvas.getContext('2d');
         this.overlay = document.getElementById('wheel-overlay');
         this.container = document.getElementById('wheel-container');
         this.resultText = document.getElementById('wheel-result');
         this.colors = {
-            attack: '#ffcc00',
-            guard: '#0088ff',
-            miss: '#666666',
-            evol: '#ff3333',
-            skill: '#ff00ff',
-            heal: '#00ffcc',
-            buff: '#ffffff',
-            debuff: '#aa0000'
+            blue: '#0088ff',   // Encryption
+            gold: '#ffcc00',   // Priority
+            purple: '#ff00ff', // Glitch
+            white: '#ffffff',  // Standard
+            red: '#ff3333'     // Miss
         };
-
-        this.canvas.width = 250;
-        this.canvas.height = 250;
     }
 
-    draw(stats) {
-        if (!this.ctx) return;
-        const total = Object.values(stats).reduce((a, b) => a + b, 0);
-        let startAngle = 0;
-        const radius = 125;
-        const centerX = 125;
-        const centerY = 125;
+    // Solve combat logic based on Priority Hierarchy (GDD 3.1)
+    static resolveCombat(attacker, defender, attackResult, defendResult) {
+        const pA = this.getPriority(attackResult.type);
+        const pB = this.getPriority(defendResult.type);
 
-        this.ctx.clearRect(0, 0, 250, 250);
+        // 🔵 Blue wins all
+        if (attackResult.type === 'blue' && defendResult.type !== 'blue') return 'attacker_defends';
+        if (defendResult.type === 'blue' && attackResult.type !== 'blue') return 'defender_defends';
+        if (attackResult.type === 'blue' && defendResult.type === 'blue') return 'draw';
 
-        for (const [key, value] of Object.entries(stats)) {
-            const sliceAngle = (value / total) * 2 * Math.PI;
+        // Dominance logic
+        if (pA > pB) return 'attacker_wins';
+        if (pB > pA) return 'defender_wins';
 
-            this.ctx.beginPath();
-            this.ctx.moveTo(centerX, centerY);
-            this.ctx.arc(centerX, centerY, radius, startAngle, startAngle + sliceAngle);
-            this.ctx.closePath();
-
-            this.ctx.fillStyle = this.colors[key] || '#FFFFFF';
-            this.ctx.fill();
-            this.ctx.strokeStyle = 'rgba(0,0,0,0.5)';
-            this.ctx.stroke();
-
-            // Labels
-            const middleAngle = startAngle + sliceAngle / 2;
-            const labelX = centerX + (radius / 1.5) * Math.cos(middleAngle);
-            const labelY = centerY + (radius / 1.5) * Math.sin(middleAngle);
-
-            this.ctx.fillStyle = '#000';
-            this.ctx.font = 'bold 8px Courier New';
-            this.ctx.textAlign = 'center';
-            this.ctx.fillText(key.toUpperCase(), labelX, labelY);
-
-            startAngle += sliceAngle;
+        // Same color logic
+        if (attackResult.type === 'white') {
+            return attackResult.power > defendResult.power ? 'attacker_wins' : 'defender_wins';
         }
+
+        if (attackResult.type === 'purple') {
+            return attackResult.stars > defendResult.stars ? 'attacker_wins' : 'defender_wins';
+        }
+
+        return 'draw';
     }
 
-    spin(stats) {
-        return new Promise((resolve) => {
-            if (!this.overlay || !this.container) return resolve('MISS');
-            this.overlay.style.display = 'flex';
-            this.draw(stats);
-            this.resultText.innerText = 'PROCESSANDO...';
+    static getPriority(color) {
+        const hierarchy = { 'blue': 10, 'gold': 5, 'purple': 3, 'white': 1, 'red': 0 };
+        return hierarchy[color] || 0;
+    }
 
-            const randomDegree = Math.floor(Math.random() * 360) + 1440;
-            this.container.style.transition = 'transform 3s cubic-bezier(0.15, 0, 0.15, 1)';
+    async spin(unit) {
+        return new Promise((resolve) => {
+            this.overlay.style.display = 'flex';
+            this.draw(unit.wheel);
+
+            const randomDegree = 1440 + Math.floor(Math.random() * 360);
             this.container.style.transform = `rotate(${randomDegree}deg)`;
 
             setTimeout(() => {
                 const finalDegree = randomDegree % 360;
-                const normalizedDegree = (360 - (finalDegree - 90)) % 360;
-                const finalResult = this.calculateResult(stats, normalizedDegree);
+                // Marker is at top (270deg in canvas logic relative to 0 at 3oclock)
+                const normalized = (360 - (finalDegree - 90)) % 360;
+                const result = this.calculateResult(unit.wheel, normalized);
 
-                this.resultText.innerText = `RESULTADO: ${finalResult}`;
+                this.resultText.innerText = `${result.label.toUpperCase()} (${result.type.toUpperCase()})`;
 
                 setTimeout(() => {
                     this.overlay.style.display = 'none';
-                    this.container.style.transition = 'none';
                     this.container.style.transform = 'rotate(0deg)';
-                    this.container.offsetHeight;
-                    resolve(finalResult);
-                }, 2000);
-            }, 3500);
+                    resolve(result);
+                }, 1500);
+            }, 3200);
         });
     }
 
-    calculateResult(stats, degree) {
-        const total = Object.values(stats).reduce((a, b) => a + b, 0);
-        let currentDegree = 0;
-        const targetDegree = degree;
+    draw(wheel) {
+        const ctx = this.canvas.getContext('2d');
+        ctx.clearRect(0, 0, 250, 250);
+        let startAngle = 0;
+        const totalSize = 96;
 
-        for (const [key, value] of Object.entries(stats)) {
-            const sliceDegree = (value / total) * 360;
-            if (targetDegree >= currentDegree && targetDegree < currentDegree + sliceDegree) {
-                return key.toUpperCase();
-            }
-            currentDegree += sliceDegree;
+        wheel.forEach(segment => {
+            const angle = (segment.size / totalSize) * 2 * Math.PI;
+            ctx.beginPath();
+            ctx.moveTo(125, 125);
+            ctx.arc(125, 125, 120, startAngle, startAngle + angle);
+            ctx.fillStyle = this.colors[segment.type];
+            ctx.fill();
+            ctx.stroke();
+            startAngle += angle;
+        });
+    }
+
+    calculateResult(wheel, degree) {
+        let current = 0;
+        const targetSize = (degree / 360) * 96;
+        for (const s of wheel) {
+            if (targetSize >= current && targetSize < current + s.size) return s;
+            current += s.size;
         }
-        return 'MISS';
+        return wheel[wheel.length - 1];
     }
 }
