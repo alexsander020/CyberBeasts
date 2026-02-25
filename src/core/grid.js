@@ -1,91 +1,95 @@
 export class GameGrid {
-    constructor(containerId, rows = 6, cols = 6) {
-        this.container = document.getElementById(containerId);
-        this.rows = rows;
-        this.cols = cols;
-        this.cells = [];
-        this.units = []; // Tracking units on the grid
+    constructor() {
+        this.container = document.getElementById('nodes-layer');
+        this.svg = document.getElementById('board-svg');
+        this.unitsLayer = document.getElementById('units-layer');
+        this.nodes = [];
+        this.connections = [];
+        this.units = [];
         this.init();
     }
 
     init() {
+        // Define a node map that forms a hexagonal/cyber pattern similar to the image
+        this.nodes = [
+            { id: 0, x: 50, y: 10 }, { id: 1, x: 20, y: 30 }, { id: 2, x: 80, y: 30 },
+            { id: 3, x: 20, y: 70 }, { id: 4, x: 80, y: 70 }, { id: 5, x: 50, y: 90 },
+            { id: 6, x: 50, y: 40 }, { id: 7, x: 50, y: 60 }, { id: 8, x: 35, y: 50 },
+            { id: 9, x: 65, y: 50 }
+        ];
+
+        this.connections = [
+            [0, 1], [0, 2], [1, 3], [2, 4], [3, 5], [4, 5],
+            [1, 6], [2, 6], [3, 7], [4, 7], [6, 8], [6, 9],
+            [7, 8], [7, 9], [8, 9]
+        ];
+
+        this.render();
+    }
+
+    render() {
         this.container.innerHTML = '';
-        for (let r = 0; r < this.rows; r++) {
-            for (let c = 0; c < this.cols; c++) {
-                const cell = this.createCell(r, c);
-                this.container.appendChild(cell);
-                this.cells.push({
-                    r, c,
-                    element: cell,
-                    type: this.getNodeType(r, c)
-                });
-            }
-        }
+        this.svg.innerHTML = '';
+
+        // Draw Connections
+        this.connections.forEach(([startId, endId]) => {
+            const start = this.nodes.find(n => n.id === startId);
+            const end = this.nodes.find(n => n.id === endId);
+
+            const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            line.setAttribute("x1", `${start.x}%`);
+            line.setAttribute("y1", `${start.y}%`);
+            line.setAttribute("x2", `${end.x}%`);
+            line.setAttribute("y2", `${end.y}%`);
+            line.setAttribute("stroke", "rgba(255,255,255,0.2)");
+            line.setAttribute("stroke-width", "2");
+            this.svg.appendChild(line);
+        });
+
+        // Draw Nodes
+        this.nodes.forEach(node => {
+            const el = document.createElement('div');
+            el.className = 'grid-point';
+            el.style.left = `${node.x}%`;
+            el.style.top = `${node.y}%`;
+            el.dataset.id = node.id;
+
+            el.addEventListener('click', () => this.handleNodeClick(node));
+            this.container.appendChild(el);
+        });
     }
 
-    getNodeType(r, c) {
-        // Core Nexus
-        if ((r === 0 && (c === 2 || c === 3)) || (r === 5 && (c === 2 || c === 3))) return 'core-nexus';
-
-        // Random obstacles and nodes for demonstration
-        const seed = (r * 10 + c);
-        if (seed % 13 === 0 && r > 0 && r < 5) return 'firewall';
-        if (seed % 11 === 0 && r > 0 && r < 5) return 'boost-node';
-        if (seed % 17 === 0 && r > 0 && r < 5) return 'repair-node';
-
-        return 'normal';
-    }
-
-    createCell(r, c) {
-        const cell = document.createElement('div');
-        cell.className = 'cell';
-        const type = this.getNodeType(r, c);
-        if (type !== 'normal') cell.classList.add(type);
-
-        cell.dataset.row = r;
-        cell.dataset.col = c;
-        cell.id = `cell-${r}-${c}`;
-
-        // Spawn Zones
-        if (r === 0) cell.classList.add('spawn-blue');
-        if (r === 5) cell.classList.add('spawn-red');
-
-        cell.addEventListener('click', () => this.handleCellClick(r, c));
-
-        return cell;
-    }
-
-    handleCellClick(r, c) {
+    handleNodeClick(node) {
         const statusPanel = document.getElementById('status-panel');
-        const cellInfo = this.cells.find(cell => cell.r === r && cell.c === c);
+        statusPanel.innerHTML = `> NODO ATIVO: ${node.id}<br>> COORDENADAS: [${node.x}, ${node.y}]`;
 
-        statusPanel.innerHTML = `> CELULA: [${r}, ${c}] | TIPO: ${cellInfo.type.toUpperCase()}<br>> ANALISANDO DADOS...`;
-
-        // Handle basic unit interaction / collision trigger
-        this.checkCollision(r, c);
-
-        // Highlight selection
-        this.cells.forEach(cell => cell.element.style.boxShadow = '');
-        cellInfo.element.style.boxShadow = 'inset 0 0 15px var(--cyber-magenta)';
+        // Highlight logic
+        const points = document.querySelectorAll('.grid-point');
+        points.forEach(p => p.style.background = 'white');
+        const active = document.querySelector(`.grid-point[data-id="${node.id}"]`);
+        active.style.background = '#00ffcc';
     }
 
-    checkCollision(r, c) {
-        // Placeholder for collision logic: If unit A moves to unit B
-        // In this sprint, we just log the trigger
-        console.log(`Collision check at [${r}, ${c}]`);
-    }
+    placeUnit(unit, nodeId) {
+        const node = this.nodes.find(n => n.id === nodeId);
+        unit.currentNode = nodeId;
 
-    placeUnit(unit, r, c) {
-        unit.position = { r, c };
-        const cell = document.getElementById(`cell-${r}-${c}`);
-        const unitEl = document.createElement('div');
-        unitEl.className = 'cyberbeast-sprite';
-        unitEl.style.width = '40px';
-        unitEl.style.height = '40px';
-        unitEl.style.background = unit.type === 'Striker' ? 'var(--matrix-green)' : 'var(--cyber-magenta)';
-        unitEl.style.borderRadius = '50%';
-        unitEl.style.boxShadow = '0 0 10px currentColor';
-        cell.appendChild(unitEl);
+        let unitEl = document.getElementById(`unit-${unit.name}`);
+        if (!unitEl) {
+            unitEl = document.createElement('div');
+            unitEl.id = `unit-${unit.name}`;
+            unitEl.className = `unit-disc ${unit.isEnemy ? 'enemy' : ''}`;
+            unitEl.innerHTML = `
+                <div class="base"></div>
+                <div class="visual">👾</div>
+                <div class="hp-badge">${unit.hp}</div>
+            `;
+            this.unitsLayer.appendChild(unitEl);
+        }
+
+        unitEl.style.left = `${node.x}%`;
+        unitEl.style.top = `${node.y}%`;
+
         this.units.push(unit);
     }
 }

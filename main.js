@@ -3,29 +3,31 @@ import { DataWheel } from './src/core/dataWheel.js';
 import { CyberBeast, CLASS_STATS } from './src/entities/cyberbeast.js';
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('CyberBeasts: Core Conquest - Inicializado');
+    console.log('CyberBeasts: Core Conquest - Inicializado na Floresta Cyber');
 
-    // Inicializa o Grid 6x6
-    const grid = new GameGrid('game-grid');
+    // Inicializa o Grid de Nodos
+    const grid = new GameGrid();
     const wheel = new DataWheel();
 
-    // Spawn test units
+    // Spawn test units on nodes
     const alphaStriker = new CyberBeast('Alpha', 'Striker', CLASS_STATS.Striker);
     const betaTank = new CyberBeast('Beta', 'Tank', CLASS_STATS.Tank);
+    betaTank.isEnemy = true;
 
-    grid.placeUnit(alphaStriker, 0, 1);
-    grid.placeUnit(betaTank, 5, 4);
+    // Place units on specific nodes (0-9 defined in grid.js)
+    grid.placeUnit(alphaStriker, 5); // Nodo de base (inferior)
+    grid.placeUnit(betaTank, 0);    // Nodo de base (superior)
 
-    // Botão de Próximo Turno - Agora simula uma resolução de combate
+    // Botão de Compilar Dados (Next Turn)
     const nextTurnBtn = document.getElementById('btn-next-turn');
     if (nextTurnBtn) {
         nextTurnBtn.addEventListener('click', async () => {
             const statusPanel = document.getElementById('status-panel');
             statusPanel.innerHTML = '> SIMULANDO CONFLITO DE DADOS...';
 
-            // Simula um combate entre Alpha e Beta
+            // Simula um combate
             const result = await wheel.spin(alphaStriker.wheel);
-            statusPanel.innerHTML += `<br>> ALPHA Striker resolveu: ${result}`;
+            statusPanel.innerHTML = `> ALPHA Striker: ${result}`;
         });
     }
 });

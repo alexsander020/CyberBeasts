@@ -5,35 +5,73 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CyberBeasts: Core Conquest</title>
-    <meta name="description"
-        content="Estratégia Tática em Turnos no Nexoverse. Compile sua equipe e processe a vitória.">
+    <meta name="description" content="Estratégia Tática em Turnos no Nexoverse.">
     <link rel="stylesheet" href="./style.css">
 </head>
 
 <body>
-    <h1>CyberBeasts</h1>
-
-    <div id="game-container">
-        <div class="info-panel" id="status-panel">
-            > STATUS: SISTEMA ONLINE<br>
-            > AGUARDANDO COMANDO DO ARQUITETADOR...
-        </div>
-
-        <div id="wheel-overlay">
-            <div class="wheel-marker"></div>
-            <div class="wheel-container" id="wheel-container">
-                <canvas id="wheel-canvas"></canvas>
+    <div id="game-shell">
+        <!-- TOP UI -->
+        <header class="game-header">
+            <div class="player-profile">
+                <div class="avatar"></div>
+                <div class="player-info">
+                    <span class="player-name">Sage</span>
+                    <div class="meter-container">
+                        <div class="meter-fill"></div>
+                    </div>
+                </div>
             </div>
-            <div class="wheel-result" id="wheel-result">AGUARDANDO...</div>
+
+            <div class="turn-counter">
+                <span class="turn-label">Turno</span>
+                <span class="turn-number" id="turn-val">298</span>
+            </div>
+
+            <div class="player-profile enemy">
+                <div class="player-info">
+                    <span class="player-name">Enemy AI</span>
+                    <div class="meter-container">
+                        <div class="meter-fill"></div>
+                    </div>
+                </div>
+                <div class="avatar"></div>
+            </div>
+        </header>
+
+        <!-- GAME AREA -->
+        <main id="game-container">
+            <div class="board-path" id="board-path">
+                <svg class="board-svg" id="board-svg">
+                    <!-- Lines connecting nodes will be drawn here -->
+                </svg>
+                <div id="nodes-layer"></div>
+                <div id="units-layer"></div>
+            </div>
+
+            <!-- STATUS INFO OVERLAY -->
+            <div style="position: absolute; top: 100px; left: 20px; color: #00ffcc; font-size: 0.7rem; font-family: 'JetBrains Mono';"
+                id="status-panel">
+                > SYSTEM READY
+            </div>
+        </main>
+
+        <!-- DATA WHEEL (Hidden by default) -->
+        <div id="wheel-overlay">
+            <div id="wheel-container"
+                style="width: 250px; height: 250px; border-radius: 50%; border: 4px solid #ffcc00; position: relative;">
+                <canvas id="wheel-canvas" width="250" height="250"></canvas>
+            </div>
+            <div id="wheel-result" style="margin-top: 20px; color: #ffcc00; font-size: 1.5rem; font-weight: bold;">
+                AGUARDANDO...</div>
         </div>
 
-        <div class="grid" id="game-grid">
-            <!-- Grid will be generated via JavaScript -->
-        </div>
-
-        <div class="controls">
-            <button class="cyber-button" id="btn-next-turn">Finalizar Turno</button>
-        </div>
+        <!-- BOTTOM UI -->
+        <footer class="game-footer">
+            <button class="action-btn">Desistir</button>
+            <button class="action-btn active" id="btn-next-turn">Compilar Dados</button>
+            <button class="action-btn">Habilidade</button>
+        </footer>
     </div>
 
     <script type="module" src="./main.js"></script>

@@ -1,13 +1,12 @@
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap');
 
 :root {
-    --matrix-green: #00FF41;
-    --cyber-magenta: #FF00FF;
-    --deep-black: #0D0D0D;
-    --grid-line: rgba(0, 255, 65, 0.2);
-    --font-main: 'Orbitron', sans-serif;
-    --font-mono: 'JetBrains Mono', monospace;
-    --glitch-speed: 2s;
+    --player-blue: #0088ff;
+    --enemy-red: #ff3333;
+    --accent-yellow: #ffcc00;
+    --bg-dark: rgba(13, 13, 13, 0.8);
+    --node-glow: rgba(255, 255, 255, 0.4);
+    --font-main: 'Outfit', sans-serif;
 }
 
 * {
@@ -17,252 +16,267 @@
 }
 
 body {
-    background-color: var(--deep-black);
-    color: var(--matrix-green);
+    background-color: #051405;
+    background-image: url('./assets/cyber_forest_bg_1772062098198.png');
+    background-size: cover;
+    background-position: center;
     font-family: var(--font-main);
-    overflow: hidden;
     height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+
+#game-shell {
+    width: 100vw;
+    max-width: 450px;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(2px);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* TOP HEADER */
+.game-header {
+    height: 90px;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.9), transparent);
+    display: flex;
+    align-items: center;
+    padding: 0 15px;
+    justify-content: space-between;
+    position: relative;
+    z-index: 10;
+}
+
+.player-profile {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 40%;
+}
+
+.player-profile.enemy {
+    justify-content: flex-end;
+    text-align: right;
+}
+
+.avatar {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    background: #333;
+    border: 2px solid var(--player-blue);
+    overflow: hidden;
+    box-shadow: 0 0 10px var(--player-blue);
+}
+
+.enemy .avatar {
+    border-color: var(--enemy-red);
+    box-shadow: 0 0 10px var(--enemy-red);
+}
+
+.player-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.player-name {
+    font-size: 0.8rem;
+    font-weight: bold;
+    color: white;
+    text-transform: uppercase;
+}
+
+.meter-container {
+    width: 80px;
+    height: 6px;
+    background: #222;
+    border-radius: 3px;
+    margin-top: 4px;
+    overflow: hidden;
+}
+
+.meter-fill {
+    height: 100%;
+    background: var(--player-blue);
+    width: 80%;
+}
+
+.enemy .meter-fill {
+    background: var(--enemy-red);
+}
+
+.turn-counter {
+    width: 65px;
+    height: 65px;
+    background: #000;
+    border: 2px solid var(--accent-yellow);
+    border-radius: 15px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    box-shadow: 0 0 20px var(--accent-yellow);
 }
 
-body::before {
-    content: "";
+.turn-label {
+    font-size: 0.5rem;
+    color: #888;
+    text-transform: uppercase;
+}
+
+.turn-number {
+    font-size: 1.4rem;
+    font-weight: bold;
+    color: white;
+}
+
+/* GAME BOARD AREA */
+#game-container {
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.board-path {
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+/* Connective lines SVG */
+.board-svg {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background-image:
-        linear-gradient(var(--grid-line) 1px, transparent 1px),
-        linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
-    background-size: 40px 40px;
-    z-index: -1;
-    opacity: 0.3;
+    z-index: 1;
+    pointer-events: none;
 }
 
-h1 {
-    font-size: 2.5rem;
-    text-transform: uppercase;
-    letter-spacing: 5px;
-    margin-bottom: 2rem;
-    text-shadow: 2px 2px var(--cyber-magenta);
-    animation: glitch 3s infinite alternate;
+.grid-point {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    background: white;
+    border-radius: 50%;
+    z-index: 2;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 5px white;
+    opacity: 0.5;
+    cursor: pointer;
 }
 
-#game-container {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 20px;
+.grid-point:hover {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.5);
 }
 
-.grid {
-    display: grid;
-    grid-template-columns: repeat(6, 60px);
-    grid-template-rows: repeat(6, 60px);
-    gap: 4px;
-    padding: 10px;
-    background: rgba(0, 255, 65, 0.05);
-    border: 2px solid var(--matrix-green);
-    box-shadow: 0 0 15px rgba(0, 255, 65, 0.2);
-}
-
-.cell {
+/* UNIT DISCS */
+.unit-disc {
     width: 60px;
     height: 60px;
-    border: 1px solid var(--grid-line);
+    border-radius: 50%;
+    position: absolute;
+    z-index: 10;
+    transform: translate(-50%, -50%);
     display: flex;
     align-items: center;
     justify-content: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    filter: drop-shadow(0 10px 10px rgba(0, 0, 0, 0.5));
 }
 
-.cell:hover {
-    background: rgba(0, 255, 65, 0.1);
-    box-shadow: inset 0 0 10px var(--matrix-green);
-}
-
-.cell.spawn-blue {
-    background: rgba(0, 0, 255, 0.2);
-    border-color: #0000FF;
-}
-
-.cell.spawn-red {
-    background: rgba(255, 0, 0, 0.2);
-    border-color: #FF0000;
-}
-
-.cell.core-nexus {
-    background: rgba(255, 0, 255, 0.1);
-    border: 2px solid var(--cyber-magenta);
-    animation: pulse 2s infinite;
-}
-
-@keyframes glitch {
-    0% {
-        transform: translate(0);
-        text-shadow: 2px 2px var(--cyber-magenta);
-    }
-
-    2% {
-        transform: translate(-2px, 2px);
-        text-shadow: -2px -2px var(--matrix-green);
-    }
-
-    4% {
-        transform: translate(2px, -2px);
-        text-shadow: 2px 2px var(--cyber-magenta);
-    }
-
-    6% {
-        transform: translate(0);
-    }
-
-    100% {
-        transform: translate(0);
-    }
-}
-
-@keyframes pulse {
-    0% {
-        box-shadow: 0 0 5px var(--cyber-magenta);
-    }
-
-    50% {
-        box-shadow: 0 0 20px var(--cyber-magenta);
-    }
-
-    100% {
-        box-shadow: 0 0 5px var(--cyber-magenta);
-    }
-}
-
-.info-panel {
+.unit-disc .base {
     width: 100%;
-    max-width: 400px;
-    background: rgba(0, 255, 65, 0.1);
-    border: 1px solid var(--matrix-green);
-    padding: 10px;
-    font-family: var(--font-mono);
-    font-size: 0.8rem;
-    margin-bottom: 20px;
-    box-shadow: 0 0 10px rgba(0, 255, 65, 0.1);
+    height: 100%;
+    background: var(--player-blue);
+    border-radius: 50%;
+    border: 3px solid white;
+    box-shadow: inset 0 0 15px rgba(255, 255, 255, 0.5);
 }
 
-/* Data Wheel (Roleta) */
+.unit-disc.enemy .base {
+    background: var(--enemy-red);
+}
+
+.unit-disc .visual {
+    position: absolute;
+    font-size: 1.5rem;
+    z-index: 2;
+}
+
+.hp-badge {
+    position: absolute;
+    bottom: -5px;
+    right: -5px;
+    background: #ff0000;
+    color: white;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    font-size: 0.7rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    border: 1px solid white;
+}
+
+/* BOTTOM FOOTER */
+.game-footer {
+    height: 100px;
+    background: rgba(0, 0, 0, 0.9);
+    display: flex;
+    align-items: center;
+    padding: 0 15px;
+    gap: 10px;
+    z-index: 10;
+}
+
+.action-btn {
+    flex: 1;
+    height: 50px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    color: #aaa;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    cursor: pointer;
+}
+
+.action-btn.active {
+    background: linear-gradient(to bottom, #ffcc00, #ff9900);
+    border: none;
+    color: black;
+    font-weight: bold;
+    font-size: 0.9rem;
+    height: 60px;
+    box-shadow: 0 0 20px rgba(255, 204, 0, 0.4);
+}
+
+/* Combat Overlay */
 #wheel-overlay {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(13, 13, 13, 0.85);
+    background: rgba(0, 0, 0, 0.9);
     display: none;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     z-index: 100;
-    backdrop-filter: blur(5px);
-}
-
-.wheel-container {
-    position: relative;
-    width: 300px;
-    height: 300px;
-    border-radius: 50%;
-    border: 4px solid var(--matrix-green);
-    box-shadow: 0 0 30px var(--matrix-green);
-    transition: transform 3s cubic-bezier(0.15, 0, 0.15, 1);
-}
-
-.wheel-marker {
-    position: absolute;
-    top: -20px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 0;
-    height: 0;
-    border-left: 15px solid transparent;
-    border-right: 15px solid transparent;
-    border-top: 30px solid var(--cyber-magenta);
-    z-index: 101;
-    filter: drop-shadow(0 0 5px var(--cyber-magenta));
-}
-
-#wheel-canvas {
-    width: 100%;
-    height: 100%;
-}
-
-.wheel-result {
-    margin-top: 30px;
-    font-size: 2rem;
-    font-weight: bold;
-    text-transform: uppercase;
-    color: var(--cyber-magenta);
-    text-shadow: 0 0 10px var(--cyber-magenta);
-}
-
-/* Special Nodes */
-.cell.boost-node::after {
-    content: '⚡';
-    font-size: 1.2rem;
-    animation: flicker 1s infinite;
-}
-
-.cell.repair-node::after {
-    content: '🛠️';
-    font-size: 1.2rem;
-}
-
-.cell.firewall::after {
-    content: '';
-    position: absolute;
-    width: 80%;
-    height: 80%;
-    background: repeating-linear-gradient(45deg, #FF0000, #FF0000 5px, #000 5px, #000 10px);
-    opacity: 0.6;
-}
-
-@keyframes flicker {
-
-    0%,
-    100% {
-        opacity: 1;
-        filter: drop-shadow(0 0 2px var(--matrix-green));
-    }
-
-    50% {
-        opacity: 0.5;
-        filter: none;
-    }
-}
-
-.cyber-button {
-    background: transparent;
-    border: 1px solid var(--matrix-green);
-    color: var(--matrix-green);
-    padding: 10px 20px;
-    font-family: var(--font-mono);
-    cursor: pointer;
-    transition: all 0.3s;
-    text-transform: uppercase;
-    clip-path: polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%);
-}
-
-.cyber-button:hover {
-    background: var(--matrix-green);
-    color: var(--deep-black);
-    box-shadow: 0 0 20px var(--matrix-green);
-}
-
-.controls {
-    display: flex;
-    gap: 10px;
-    margin-top: 20px;
 }
