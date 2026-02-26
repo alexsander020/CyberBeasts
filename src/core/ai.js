@@ -6,21 +6,33 @@ export class CyberAI {
 
     async playTurn() {
         console.log("AI starts processing data...");
-        const enemyUnits = Array.from(this.grid.units.values()).filter(u => u.owner === 'enemy');
 
-        // 1. Try to spawn if units are available in bench
-        await this.trySpawn();
+        // 1. Reactive Spawning: If player is near core, spawn immediately
+        const playerUnits = Array.from(this.grid.units.values()).filter(u => u.owner === 'player');
+        const enemyCoreId = 10;
+        const playerNearCore = playerUnits.some(pu => {
+            const neighbors = this.grid.getNeighbors(enemyCoreId);
+            return neighbors.includes(pu.currentNode);
+        });
+
+        if (playerNearCore && this.gameState.enemyBench.length > 0) {
+            await this.trySpawn();
+        }
+
+        const enemyUnits = Array.from(this.grid.units.values()).filter(u => u.owner === 'enemy');
 
         // 2. Move each unit on board
         for (const unit of enemyUnits) {
             await this.calculateAggressiveMove(unit);
-            await new Promise(r => setTimeout(r, 500)); // Delay between unit moves for visual feedback
+            await new Promise(r => setTimeout(r, 600));
         }
+
+        // 3. Normal spawning at end of turn
+        await this.trySpawn();
     }
 
     async trySpawn() {
         if (this.gameState.enemyBench.length > 0) {
-            // Entry points for enemy: 8, 9
             const entryPoints = [8, 9].filter(id => !this.grid.units.has(id));
             if (entryPoints.length > 0) {
                 const unit = this.gameState.enemyBench.shift();
@@ -32,47 +44,46 @@ export class CyberAI {
     }
 
     async calculateAggressiveMove(unit) {
-        const reachable = this.grid.getReachableNodes(unit.currentNode, unit.mp);
-        if (reachable.length === 0) return;
+        // Use the new Map-based API from Kernel v2.5+
+        const reachableMap = this.grid.getReachableNodesMap(unit.currentNode, unit.mp);
+        const reachableNodes = Array.from(reachableMap.keys());
+        if (reachableNodes.length === 0) return;
 
         // TARGET PRIORITIES:
-        // 1. Player Core (Node 2) - Immediate Win
-        // 2. Attack Player Units - Strategic Thinning
-        // 3. Move closer to Player Core - Advancement
-
-        const playerCoreId = 2;
-        if (reachable.includes(playerCoreId)) {
-            await this.grid.executeMove(unit, playerCoreId);
+        // 1. Defend Core (Node 10) if player is near
+        const enemyCoreId = 10;
+        if (reachableNodes.includes(enemyCoreId)) {
+            await this.grid.animateMove(unit, reachableMap.get(enemyCoreId));
             return;
         }
 
-        // Check for player units to attack
-        const attackTargets = reachable.filter(nId => {
+        // 2. Attack Player Units
+        const attackTargets = reachableNodes.filter(nId => {
             const u = this.grid.units.get(nId);
             return u && u.owner === 'player';
         });
 
         if (attackTargets.length > 0) {
-            // Pick a random target to attack
             const target = attackTargets[Math.floor(Math.random() * attackTargets.length)];
-            await this.grid.executeMove(unit, target);
+            await this.grid.animateMove(unit, reachableMap.get(target));
             return;
         }
 
-        // Advance towards the Player Core
-        let bestNode = reachable[0];
+        // 3. Advance towards Player Core (Node 2)
+        const playerCoreId = 2;
+        let bestNode = reachableNodes[0];
         let minDist = Infinity;
-        const coreNode = this.grid.nodes[playerCoreId];
+        const targetNode = this.grid.nodes[playerCoreId];
 
-        reachable.forEach(nId => {
+        reachableNodes.forEach(nId => {
             const node = this.grid.nodes[nId];
-            const dist = Math.sqrt(Math.pow(node.x - coreNode.x, 2) + Math.pow(node.y - coreNode.y, 2));
+            const dist = Math.sqrt(Math.pow(node.x - targetNode.x, 2) + Math.pow(node.y - targetNode.y, 2));
             if (dist < minDist) {
                 minDist = dist;
                 bestNode = nId;
             }
         });
 
-        await this.grid.executeMove(unit, bestNode);
+        await this.grid.animateMove(unit, reachableMap.get(bestNode));
     }
 }

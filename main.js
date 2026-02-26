@@ -5,18 +5,15 @@ import { CyberBeast, INITIAL_BEASTS } from './src/entities/cyberbeast.js';
 import { CyberAI } from './src/core/ai.js';
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('CyberBeasts: Kernel v2.3 Initialized');
+    console.log('CyberBeasts: Kernel v2.8 Initialized');
 
     const state = new GameState();
     const grid = new GameGrid(state);
     const wheel = new DataWheel();
 
-    // Connect Wheel to Grid for Combat triggers
     grid.setWheel(wheel);
-
     const ai = new CyberAI(grid, state);
 
-    // Populate Benches
     INITIAL_BEASTS.forEach(data => {
         state.addToBench(CyberBeast.fromJSON(data, 'player'), 'player');
         state.addToBench(CyberBeast.fromJSON(data, 'enemy'), 'enemy');
@@ -25,37 +22,31 @@ document.addEventListener('DOMContentLoaded', () => {
     renderBench(state);
     state.updateUI();
 
-    // Music Toggle Logic
     const btnMusic = document.getElementById('btn-music');
     const audio = document.getElementById('bg-music');
     if (btnMusic && audio) {
-        btnMusic.addEventListener('click', () => {
+        btnMusic.onclick = () => {
             if (audio.paused) {
                 audio.play();
-                btnMusic.classList.add('playing');
                 btnMusic.innerText = '⏸️';
             } else {
                 audio.pause();
-                btnMusic.classList.remove('playing');
                 btnMusic.innerText = '🎵';
             }
-        });
+        };
     }
 
     document.addEventListener('benchUpdated', (e) => renderBench(e.detail.state));
 
     const btnNext = document.getElementById('btn-next-turn');
     if (btnNext) {
-        btnNext.addEventListener('click', async () => {
+        btnNext.addEventListener('click', async (e) => {
+            e.stopPropagation(); // Shield the grid from this click
             if (state.currentPlayer !== 'player') return;
 
             state.nextTurn();
 
-            // AI Turn
             if (state.currentPlayer === 'enemy') {
-                const statusPanel = document.getElementById('status-panel');
-                statusPanel.innerHTML += "<br>> PENSAMENTO DA IA ATIVO...";
-
                 setTimeout(async () => {
                     await ai.playTurn();
                     state.nextTurn();
@@ -64,21 +55,27 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Plates Modal Logic
     const btnPlates = document.getElementById('btn-plates');
     const platesModal = document.getElementById('plates-modal');
     const platesList = document.getElementById('plates-list');
+    const btnClosePlates = document.getElementById('btn-close-plates');
 
     if (btnPlates) {
-        btnPlates.addEventListener('click', () => {
+        btnPlates.onclick = () => {
             platesModal.style.display = 'flex';
             renderPlates(state);
-        });
+        };
     }
 
-    platesModal.addEventListener('click', (e) => {
+    if (btnClosePlates) {
+        btnClosePlates.onclick = () => {
+            platesModal.style.display = 'none';
+        };
+    }
+
+    platesModal.onclick = (e) => {
         if (e.target === platesModal) platesModal.style.display = 'none';
-    });
+    };
 
     function renderPlates(state) {
         platesList.innerHTML = '';
@@ -86,13 +83,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const card = document.createElement('div');
             card.className = 'plate-card';
             card.innerHTML = `
-                <div class="plate-name">${plate.name}</div>
+                <div class="plate-name">${plate.name.toUpperCase()}</div>
                 <div class="plate-desc">${plate.desc}</div>
-                <div style="font-size: 1.5rem; text-align: center;">⚡</div>
             `;
             card.onclick = () => {
                 console.log(`Using Plate: ${plate.name}`);
                 platesModal.style.display = 'none';
+                // Future: Implement plate effects
             };
             platesList.appendChild(card);
         });
@@ -109,16 +106,16 @@ document.addEventListener('DOMContentLoaded', () => {
             slot.innerHTML = unit.icon;
             slot.style.borderColor = unit.color;
             slot.title = `${unit.name} (${unit.type})`;
-            slot.onclick = () => {
+            slot.onclick = (e) => {
+                e.stopPropagation();
                 if (state.currentPlayer !== 'player') return;
-                // Entry points for player: 0, 1
-                const entryId = Math.random() > 0.5 ? 0 : 1;
-                if (!grid.units.has(entryId)) {
-                    grid.placeUnit(unit, entryId);
+                const entryPoints = [0, 1].filter(id => !grid.units.has(id));
+                if (entryPoints.length > 0) {
+                    grid.placeUnit(unit, entryPoints[0]);
                     state.playerBench.splice(index, 1);
                     renderBench(state);
                 } else {
-                    alert("Portal de Entrada bloqueado!");
+                    alert("PROTOCOL ERROR: Portal de Entrada bloqueado!");
                 }
             };
             benchContainer.appendChild(slot);

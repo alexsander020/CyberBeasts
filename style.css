@@ -11,6 +11,7 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
 }
 
 body {
@@ -34,7 +35,7 @@ body::after {
     bottom: 0;
     right: 0;
     background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-    z-index: 1000;
+    z-index: 10000;
     background-size: 100% 2px, 3px 100%;
     pointer-events: none;
 }
@@ -49,6 +50,7 @@ body::after {
     border-left: 2px solid var(--cyan-neon);
     border-right: 2px solid var(--cyan-neon);
     background: radial-gradient(circle, #0a0a1a 0%, #020205 100%);
+    overflow: hidden;
 }
 
 .game-header {
@@ -58,6 +60,14 @@ body::after {
     padding: 0 15px;
     justify-content: space-between;
     border-bottom: 1px solid rgba(0, 242, 255, 0.2);
+    z-index: 100;
+}
+
+.player-profile {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 30%;
 }
 
 .turn-counter {
@@ -67,6 +77,8 @@ body::after {
     text-align: center;
     box-shadow: 0 0 10px var(--cyber-pink);
     animation: glitch-flicker 4s infinite;
+    flex: 1;
+    max-width: 100px;
 }
 
 @keyframes glitch-flicker {
@@ -108,11 +120,15 @@ body::after {
     font-weight: bold;
     color: white;
     text-shadow: 1px 1px var(--cyan-neon), -1px -1px var(--cyber-pink);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 #game-container {
     flex: 1;
     position: relative;
+    z-index: 5;
 }
 
 /* GRAPH NODES */
@@ -126,7 +142,7 @@ body::after {
     box-shadow: 0 0 8px var(--cyan-neon);
     z-index: 2;
     cursor: pointer;
-    border: 20px solid transparent;
+    border: 22px solid transparent;
     background-clip: padding-box;
     transition: box-shadow 0.3s ease;
 }
@@ -183,7 +199,7 @@ body::after {
     width: 100%;
     height: 100%;
     border-radius: 50%;
-    border: 3px solid white;
+    border: 3.5px solid white;
 }
 
 .unit-disc.player .base {
@@ -201,66 +217,82 @@ body::after {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    font-size: 1.5rem;
+    font-size: 1.6rem;
 }
 
 /* FOOTER / BENCH */
 .game-footer {
-    height: 120px;
-    background: rgba(0, 0, 0, 0.8);
+    height: 130px;
+    background: rgba(0, 0, 0, 0.9);
     padding: 10px;
     display: flex;
     flex-direction: column;
     gap: 10px;
+    z-index: 1000;
+    border-top: 1px solid rgba(0, 242, 255, 0.2);
 }
 
 .bench-lane {
     display: flex;
-    gap: 8px;
+    gap: 10px;
     overflow-x: auto;
-    height: 50px;
+    height: 55px;
+    padding: 2px;
 }
 
 .bench-slot {
-    width: 40px;
-    min-width: 40px;
-    height: 40px;
-    border: 1px solid var(--cyan-neon);
-    border-radius: 4px;
+    width: 45px;
+    min-width: 45px;
+    height: 45px;
+    border: 2px solid var(--cyan-neon);
+    border-radius: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.2rem;
+    font-size: 1.4rem;
     background: rgba(0, 242, 255, 0.05);
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .bench-slot:hover {
     background: rgba(0, 242, 255, 0.2);
-    box-shadow: 0 0 10px var(--cyan-neon);
+    box-shadow: 0 0 15px var(--cyan-neon);
+    transform: translateY(-3px);
 }
 
 .action-bar {
     display: flex;
-    gap: 5px;
+    gap: 8px;
 }
 
 .action-btn {
     flex: 1;
-    background: none;
+    background: rgba(0, 242, 255, 0.05);
     border: 1px solid var(--cyan-neon);
     color: var(--cyan-neon);
-    padding: 8px;
-    font-size: 0.7rem;
+    padding: 10px;
+    font-size: 0.75rem;
+    font-weight: bold;
     text-transform: uppercase;
     cursor: pointer;
+    letter-spacing: 1px;
+    transition: all 0.2s ease;
+}
+
+.action-btn:hover {
+    background: var(--cyan-neon);
+    color: black;
 }
 
 .action-btn.primary {
     background: var(--cyan-neon);
     color: black;
-    font-weight: bold;
+    box-shadow: 0 0 10px var(--cyan-neon);
+}
+
+.action-btn.primary:hover {
+    box-shadow: 0 0 20px var(--cyan-neon);
 }
 
 .music-toggle {
@@ -270,62 +302,14 @@ body::after {
     background: rgba(0, 242, 255, 0.1);
     border: 1px solid var(--cyan-neon);
     color: var(--cyan-neon);
-    width: 30px;
-    height: 30px;
+    width: 35px;
+    height: 35px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     z-index: 1500;
-}
-
-/* BATTLE SYSTEM UI */
-.fighter-card {
-    background: rgba(0, 0, 0, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    padding: 10px;
-    border-radius: 12px;
-    min-width: 100px;
-    animation: fighter-slide 0.5s ease-out;
-}
-
-@keyframes fighter-slide {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-#wheel-result.active {
-    animation: result-glitch 0.4s infinite;
-}
-
-@keyframes result-glitch {
-    0% {
-        transform: scale(1) skew(0deg);
-        opacity: 1;
-    }
-
-    20% {
-        transform: scale(1.1) skew(5deg);
-        opacity: 0.8;
-        filter: hue-rotate(90deg);
-    }
-
-    40% {
-        transform: scale(0.9) skew(-5deg);
-        opacity: 1;
-    }
-
-    100% {
-        transform: scale(1) skew(0deg);
-    }
 }
 
 /* TURN OVERLAY */
@@ -335,32 +319,42 @@ body::after {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.6);
+    background: rgba(0, 0, 0, 0.7);
     display: none;
     align-items: center;
     justify-content: center;
-    z-index: 5000;
+    z-index: 15000;
     pointer-events: none;
 }
 
 .splash-text {
-    font-size: 3rem;
-    font-weight: 800;
+    font-size: 3.5rem;
+    font-weight: 900;
     color: var(--cyan-neon);
-    text-shadow: 0 0 20px var(--cyan-neon);
-    letter-spacing: 10px;
-    transform: skew(-10deg);
-    animation: splash-in 1s ease-out forwards;
+    text-shadow: 0 0 30px var(--cyan-neon);
+    letter-spacing: 12px;
+    transform: skew(-15deg);
+    animation: splash-in 0.8s cubic-bezier(0.15, 0, 0.15, 1) forwards;
 }
 
 @keyframes splash-in {
     0% {
-        transform: scale(3) opacity(0) skew(-30deg);
+        transform: scale(4) opacity(0) skew(-40deg);
     }
 
     100% {
-        transform: scale(1) opacity(1) skew(-10deg);
+        transform: scale(1) opacity(1) skew(-15deg);
     }
+}
+
+/* BATTLE SYSTEM UI */
+.fighter-card {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 15px;
+    border-radius: 16px;
+    min-width: 120px;
+    backdrop-filter: blur(5px);
 }
 
 #wheel-overlay {
@@ -369,51 +363,106 @@ body::after {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(2, 2, 5, 0.95);
+    background: rgba(2, 2, 5, 0.98);
     display: none;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    z-index: 2000;
+    z-index: 11000;
 }
 
+/* DATA CENTER HUD */
 .data-center-hud {
     position: absolute;
     top: 100px;
     right: 15px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
+    z-index: 50;
 }
 
 .dc-slot {
-    width: 45px;
-    height: 45px;
-    border: 1px dashed var(--cyber-pink);
-    border-radius: 4px;
+    width: 50px;
+    height: 50px;
+    border: 2px dashed var(--cyber-pink);
+    border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
+    background: rgba(255, 0, 85, 0.05);
+    font-size: 1.5rem;
 }
 
 .dc-slot.occupied {
     border-style: solid;
-    background: rgba(255, 0, 85, 0.2);
-    box-shadow: 0 0 10px var(--cyber-pink);
+    background: rgba(255, 0, 85, 0.15);
+    box-shadow: 0 0 15px var(--cyber-pink);
 }
 
+/* MODAL PLATES */
+#plates-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    display: none;
+    z-index: 20000;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(10px);
+}
+
+.plates-container-wrapper {
+    position: relative;
+    width: 90%;
+    max-width: 420px;
+}
+
+.btn-close-modal {
+    position: absolute;
+    top: -45px;
+    right: 0;
+    background: none;
+    border: 2px solid var(--cyber-pink);
+    color: var(--cyber-pink);
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    font-size: 1.2rem;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.plates-container {
+    background: var(--space-black);
+    border: 2px solid var(--cyan-neon);
+    padding: 25px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+    box-shadow: 0 0 30px rgba(0, 242, 255, 0.3);
+}
+
+/* COMBAT ANIMS */
 @keyframes combat-shake {
     0% {
         transform: translate(0, 0);
     }
 
-    25% {
-        transform: translate(5px, 5px) rotate(2deg);
+    20% {
+        transform: translate(6px, -6px);
     }
 
-    50% {
-        transform: translate(-5px, -5px) rotate(-2deg);
-        filter: brightness(2);
+    40% {
+        transform: translate(-6px, 6px);
+        filter: brightness(2) hue-rotate(45deg);
+    }
+
+    60% {
+        transform: translate(6px, 6px);
     }
 
     100% {
@@ -422,21 +471,25 @@ body::after {
 }
 
 .combat-impact {
-    animation: combat-shake 0.3s both;
+    animation: combat-shake 0.3s cubic-bezier(.36, .07, .19, .97) both;
 }
 
-@keyframes binary-burst {
+@keyframes result-glitch {
     0% {
-        transform: scale(1);
-        opacity: 1;
+        transform: scale(1) skew(0deg);
+        text-shadow: 0 0 10px #fff;
+    }
+
+    30% {
+        transform: scale(1.1) skew(10deg);
+        text-shadow: 2px -2px var(--cyan-neon), -2px 2px var(--cyber-pink);
     }
 
     100% {
-        transform: scale(2.5);
-        opacity: 0;
+        transform: scale(1) skew(0deg);
     }
 }
 
-.deleting {
-    animation: binary-burst 0.6s forwards;
+.active-result {
+    animation: result-glitch 0.3s infinite;
 }

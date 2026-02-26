@@ -25,11 +25,14 @@ const server = http.createServer((req, res) => {
     const extname = String(path.extname(filePath)).toLowerCase();
     const contentType = MIME_TYPES[extname] || 'application/octet-stream';
 
-    fs.readFile(filePath, (error, content) => {
+    // Normalize path to prevent directory traversal
+    const fullPath = path.join(__dirname, filePath);
+
+    fs.readFile(fullPath, (error, content) => {
         if (error) {
             if (error.code === 'ENOENT') {
                 res.writeHead(404);
-                res.end('Arquivo não encontrado');
+                res.end('Arquivo não encontrado: ' + filePath);
             } else {
                 res.writeHead(500);
                 res.end('Erro interno: ' + error.code);
