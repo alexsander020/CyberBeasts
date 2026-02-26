@@ -2,17 +2,25 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [ main ]
+
+# Grant permissions for the deployment action
+permissions:
+  contents: write
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout 🛎️
         uses: actions/checkout@v4
-      - name: Install and Build
+
+      - name: Install and Build 🔧
         run: |
           npm install
           npm run build
-      - name: Deploy
+
+      - name: Deploy 🚀
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           folder: dist # Vite builds to 'dist' by default
+          branch: gh-pages # Ensure it deploys to a specific branch
