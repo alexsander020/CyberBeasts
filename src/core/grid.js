@@ -1,3 +1,5 @@
+import { DataWheel } from './dataWheel.js';
+
 export class GameGrid {
     constructor(gameState) {
         this.gameState = gameState;
@@ -5,18 +7,21 @@ export class GameGrid {
         this.svg = document.getElementById('board-svg');
         this.unitsLayer = document.getElementById('units-layer');
         this.nodes = [];
-        this.connections = []; // Edges
-        this.units = new Map(); // nodeId -> CyberBeast
+        this.connections = [];
+        this.units = new Map();
+        this.wheel = null;
         this.init();
     }
 
+    setWheel(wheel) {
+        this.wheel = wheel;
+    }
+
     init() {
-        // Define a symmetric board based on the GDD (Entry points at corners, Core at center end)
-        // 0-4 Player Side, 5-9 Enemy Side
         this.nodes = [
             { id: 0, x: 30, y: 90, type: 'entry', team: 'player' },
             { id: 1, x: 70, y: 90, type: 'entry', team: 'player' },
-            { id: 2, x: 50, y: 95, type: 'core', team: 'player' }, // Player's own core
+            { id: 2, x: 50, y: 95, type: 'core', team: 'player' },
 
             { id: 3, x: 10, y: 50, type: 'node' },
             { id: 4, x: 30, y: 50, type: 'node' },
@@ -26,14 +31,14 @@ export class GameGrid {
 
             { id: 8, x: 30, y: 10, type: 'entry', team: 'enemy' },
             { id: 9, x: 70, y: 10, type: 'entry', team: 'enemy' },
-            { id: 10, x: 50, y: 5, type: 'core', team: 'enemy' } // Enemy core (Goal)
+            { id: 10, x: 50, y: 5, type: 'core', team: 'enemy' }
         ];
 
         this.connections = [
-            [0, 3], [0, 4], [1, 6], [1, 7], // Entry connections
-            [3, 4], [4, 5], [5, 6], [6, 7], // Middle line
-            [8, 3], [8, 4], [9, 6], [9, 7], // Enemy Entry connections
-            [4, 10], [5, 10], [6, 10], [2, 4], [2, 5], [2, 6] // Core goal connections
+            [0, 3], [0, 4], [1, 6], [1, 7],
+            [3, 4], [4, 5], [5, 6], [6, 7],
+            [8, 3], [8, 4], [9, 6], [9, 7],
+            [4, 10], [5, 10], [6, 10], [2, 4], [2, 5], [2, 6]
         ];
 
         this.render();
@@ -68,7 +73,7 @@ export class GameGrid {
         });
     }
 
-    onNodeClick(node) {
+    async onNodeClick(node) {
         const unitAtNode = this.units.get(node.id);
         const statusPanel = document.getElementById('status-panel');
 
@@ -80,17 +85,18 @@ export class GameGrid {
             return;
         }
 
-        // Movement Logic
+        // Movement / Combat Logic
         if (this.selectedUnit && this.isValidMove(node.id)) {
-            this.executeMove(this.selectedUnit, node.id);
+            const unit = this.selectedUnit;
             this.selectedUnit = null;
             this.clearHighlights();
+            await this.executeMove(unit, node.id);
             return;
         }
 
         this.selectedUnit = null;
         this.clearHighlights();
-        statusPanel.innerHTML = `> NODO ADJACENTE: ${node.id}`;
+        statusPanel.innerHTML = `> NODO SELECIONADO: ${node.id}`;
     }
 
     showValidMoves(startNodeId, mp) {
@@ -99,7 +105,10 @@ export class GameGrid {
 
         this.validMoveNodes.forEach(nId => {
             const el = document.querySelector(`.grid-point[data-id="${nId}"]`);
-            if (el) el.style.boxShadow = '0 0 15px #00ffcc';
+            if (el) {
+                const enemyThere = this.units.has(nId) && this.units.get(nId).owner !== this.gameState.currentPlayer;
+                el.style.boxShadow = enemyThere ? '0 0 15px #ff3333' : '0 0 15px #00ffcc';
+            }
         });
     }
 
@@ -116,8 +125,11 @@ export class GameGrid {
                 neighbors.forEach(nId => {
                     if (!visited.has(nId)) {
                         const unitThere = this.units.get(nId);
-                        // Can pass through own units? GDD doesn't specify, assuming block for now
-                        if (!unitThere) {
+                        // Can enter node with enemy to fight, but dist stops there
+                        if (unitThere && unitThere.owner !== this.gameState.currentPlayer) {
+                            reachable.add(nId);
+                            visited.add(nId);
+                        } else if (!unitThere) {
                             visited.add(nId);
                             queue.push({ id: nId, dist: dist + 1 });
                         }
@@ -138,11 +150,29 @@ export class GameGrid {
         return this.validMoveNodes && this.validMoveNodes.includes(nodeId);
     }
 
-    executeMove(unit, targetNodeId) {
+    async executeMove(unit, targetNodeId) {
+        const enemyUnit = this.units.get(targetNodeId);
+
+        if (enemyUnit && enemyUnit.owner !== unit.owner) {
+            // Combat Trigger
+            const result = await this.startCombat(unit, enemyUnit);
+            if (result === 'attacker_wins') {
+                this.deleteUnit(targetNodeId);
+                this.moveUnitToNode(unit, targetNodeId);
+            } else if (result === 'defender_wins') {
+                this.deleteUnit(unit.currentNode);
+            }
+            // If draw or defend, unit stays or bounces? GDD says: "Ganha quem tiver maior Dano"
+            // Assuming survivor stays in place.
+        } else {
+            this.moveUnitToNode(unit, targetNodeId);
+        }
+    }
+
+    moveUnitToNode(unit, targetNodeId) {
         const oldNodeId = unit.currentNode;
         this.units.delete(oldNodeId);
 
-        // Check for Goal (Core Conquest)
         const targetNode = this.nodes[targetNodeId];
         if (targetNode.type === 'core' && targetNode.team !== unit.owner) {
             alert(`SISTEMA INVADIDO! ${unit.owner.toUpperCase()} VENCEU!`);
@@ -151,8 +181,21 @@ export class GameGrid {
         }
 
         this.placeUnit(unit, targetNodeId);
-        console.log(`${unit.name} moved to ${targetNodeId}`);
         this.checkSurround(targetNodeId);
+    }
+
+    async startCombat(attacker, defender) {
+        const statusPanel = document.getElementById('status-panel');
+        statusPanel.innerHTML = `> COMBATE: ${attacker.name} vs ${defender.name}`;
+
+        // Spin for Attacker
+        const attackRes = await this.wheel.spin(attacker);
+        // Spin for Defender
+        const defendRes = await this.wheel.spin(defender);
+
+        const winner = DataWheel.resolveCombat(attacker, defender, attackRes, defendRes);
+        console.log(`Combat Result: ${winner}`);
+        return winner;
     }
 
     clearHighlights() {
@@ -180,22 +223,17 @@ export class GameGrid {
         unitEl.style.top = `${node.y}%`;
     }
 
-    // 2.2 SYSTEMA DE CERCO (SURROUND)
     checkSurround(nodeId) {
         const unit = this.units.get(nodeId);
         if (!unit) return;
 
-        const neighbors = this.connections
-            .filter(c => c.includes(nodeId))
-            .map(c => c[0] === nodeId ? c[1] : c[0]);
-
+        const neighbors = this.getNeighbors(nodeId);
         const allBlocked = neighbors.every(nId => {
             const neighborUnit = this.units.get(nId);
             return neighborUnit && neighborUnit.owner !== unit.owner;
         });
 
         if (allBlocked && neighbors.length > 0) {
-            console.log(`SURROUND TRIGGERED! ${unit.name} is deleted.`);
             this.deleteUnit(nodeId);
         }
     }

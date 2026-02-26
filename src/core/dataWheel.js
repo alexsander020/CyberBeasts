@@ -59,10 +59,14 @@ export class DataWheel {
                 const result = this.calculateResult(unit.wheel, normalized);
 
                 this.resultText.innerText = `${result.label.toUpperCase()} (${result.type.toUpperCase()})`;
+                this.resultText.classList.add('active');
+                this.container.classList.add('combat-impact');
 
                 setTimeout(() => {
                     this.overlay.style.display = 'none';
                     this.container.style.transform = 'rotate(0deg)';
+                    this.resultText.classList.remove('active');
+                    this.container.classList.remove('combat-impact');
                     resolve(result);
                 }, 1500);
             }, 3200);

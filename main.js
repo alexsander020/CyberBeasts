@@ -5,11 +5,15 @@ import { CyberBeast, INITIAL_BEASTS } from './src/entities/cyberbeast.js';
 import { CyberAI } from './src/core/ai.js';
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('CyberBeasts: Kernel v2.2 Initialized');
+    console.log('CyberBeasts: Kernel v2.3 Initialized');
 
     const state = new GameState();
     const grid = new GameGrid(state);
     const wheel = new DataWheel();
+
+    // Connect Wheel to Grid for Combat triggers
+    grid.setWheel(wheel);
+
     const ai = new CyberAI(grid, state);
 
     // Populate Benches
@@ -20,6 +24,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
     renderBench(state);
     state.updateUI();
+
+    // Music Toggle Logic
+    const btnMusic = document.getElementById('btn-music');
+    const audio = document.getElementById('bg-music');
+    if (btnMusic && audio) {
+        btnMusic.addEventListener('click', () => {
+            if (audio.paused) {
+                audio.play();
+                btnMusic.classList.add('playing');
+                btnMusic.innerText = '⏸️';
+            } else {
+                audio.pause();
+                btnMusic.classList.remove('playing');
+                btnMusic.innerText = '🎵';
+            }
+        });
+    }
 
     document.addEventListener('benchUpdated', (e) => renderBench(e.detail.state));
 
@@ -35,8 +56,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const statusPanel = document.getElementById('status-panel');
                 statusPanel.innerHTML += "<br>> PENSAMENTO DA IA ATIVO...";
 
-                setTimeout(() => {
-                    ai.playTurn();
+                setTimeout(async () => {
+                    await ai.playTurn();
                     state.nextTurn();
                 }, 1000);
             }
@@ -89,10 +110,15 @@ document.addEventListener('DOMContentLoaded', () => {
             slot.title = unit.name;
             slot.onclick = () => {
                 if (state.currentPlayer !== 'player') return;
+                // Entry points for player: 0, 1
                 const entryId = Math.random() > 0.5 ? 0 : 1;
-                grid.placeUnit(unit, entryId);
-                state.playerBench.splice(index, 1);
-                renderBench(state);
+                if (!grid.units.has(entryId)) {
+                    grid.placeUnit(unit, entryId);
+                    state.playerBench.splice(index, 1);
+                    renderBench(state);
+                } else {
+                    alert("Portal de Entrada bloqueado!");
+                }
             };
             benchContainer.appendChild(slot);
         });
