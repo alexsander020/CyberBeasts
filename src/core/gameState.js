@@ -31,7 +31,6 @@ export class GameState {
 
     rebootUnit(unit) {
         console.log(`REBOOTING: ${unit.name}`);
-        // Apply reboot animation logic trigger
         this.addToBench(unit, unit.owner);
         this.updateDataCenterUI();
     }
@@ -43,19 +42,20 @@ export class GameState {
                 const unit = this.dataCenter[i];
                 if (unit) {
                     slot.classList.add('occupied');
-                    slot.innerHTML = '👾';
+                    slot.innerHTML = unit.icon || '👾';
                     slot.title = unit.name;
+                    slot.style.borderColor = unit.color || 'var(--cyber-pink)';
                 } else {
                     slot.classList.remove('occupied');
                     slot.innerHTML = '';
                     slot.title = '';
+                    slot.style.borderColor = '';
                 }
             }
         }
     }
 
     triggerBenchEvent() {
-        // Force main.js to re-render bench
         const event = new CustomEvent('benchUpdated', { detail: { state: this } });
         document.dispatchEvent(event);
     }
@@ -63,7 +63,23 @@ export class GameState {
     nextTurn() {
         this.currentPlayer = this.currentPlayer === 'player' ? 'enemy' : 'player';
         this.turnNumber++;
+        this.showTurnSplash();
         this.updateUI();
+    }
+
+    showTurnSplash() {
+        const splash = document.getElementById('turn-splash');
+        const text = document.getElementById('splash-text');
+        if (!splash || !text) return;
+
+        text.innerText = this.currentPlayer === 'player' ? 'YOUR TURN' : 'AI TURN';
+        text.style.color = this.currentPlayer === 'player' ? 'var(--cyan-neon)' : 'var(--cyber-pink)';
+        text.style.textShadow = `0 0 20px ${text.style.color}`;
+
+        splash.style.display = 'flex';
+        setTimeout(() => {
+            splash.style.display = 'none';
+        }, 1200);
     }
 
     updateUI() {

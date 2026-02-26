@@ -219,7 +219,7 @@ export class GameGrid {
             unitEl = document.createElement('div');
             unitEl.id = `unit-${unit.uuid}`;
             unitEl.className = `unit-disc ${unit.owner}`;
-            unitEl.innerHTML = `<div class="base"></div><div class="visual">👾</div>`;
+            unitEl.innerHTML = `<div class="base" style="border-color: ${unit.color}"></div><div class="visual">${unit.icon}</div>`;
             this.unitsLayer.appendChild(unitEl);
         }
 

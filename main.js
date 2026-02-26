@@ -106,8 +106,9 @@ document.addEventListener('DOMContentLoaded', () => {
         state.playerBench.forEach((unit, index) => {
             const slot = document.createElement('div');
             slot.className = 'bench-slot';
-            slot.innerHTML = '👾';
-            slot.title = unit.name;
+            slot.innerHTML = unit.icon;
+            slot.style.borderColor = unit.color;
+            slot.title = `${unit.name} (${unit.type})`;
             slot.onclick = () => {
                 if (state.currentPlayer !== 'player') return;
                 // Entry points for player: 0, 1
