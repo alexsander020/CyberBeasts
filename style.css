@@ -280,6 +280,54 @@ body::after {
     z-index: 1500;
 }
 
+/* BATTLE SYSTEM UI */
+.fighter-card {
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 10px;
+    border-radius: 12px;
+    min-width: 100px;
+    animation: fighter-slide 0.5s ease-out;
+}
+
+@keyframes fighter-slide {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+#wheel-result.active {
+    animation: result-glitch 0.4s infinite;
+}
+
+@keyframes result-glitch {
+    0% {
+        transform: scale(1) skew(0deg);
+        opacity: 1;
+    }
+
+    20% {
+        transform: scale(1.1) skew(5deg);
+        opacity: 0.8;
+        filter: hue-rotate(90deg);
+    }
+
+    40% {
+        transform: scale(0.9) skew(-5deg);
+        opacity: 1;
+    }
+
+    100% {
+        transform: scale(1) skew(0deg);
+    }
+}
+
 /* TURN OVERLAY */
 .turn-overlay {
     position: fixed;
@@ -315,7 +363,6 @@ body::after {
     }
 }
 
-/* OTHER UI */
 #wheel-overlay {
     position: fixed;
     top: 0;
@@ -355,7 +402,6 @@ body::after {
     box-shadow: 0 0 10px var(--cyber-pink);
 }
 
-/* COMBANT IMPACT */
 @keyframes combat-shake {
     0% {
         transform: translate(0, 0);

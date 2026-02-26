@@ -188,9 +188,9 @@ export class GameGrid {
     }
 
     async startCombat(attacker, defender) {
-        const result = await this.wheel.spin(attacker);
-        const resultDef = await this.wheel.spin(defender);
-        return DataWheel.resolveCombat(attacker, defender, result, resultDef);
+        const winner = await this.wheel.fullBattle(attacker, defender);
+        console.log(`Combat Resolution: ${winner}`);
+        return winner;
     }
 
     getNeighbors(nodeId) {
