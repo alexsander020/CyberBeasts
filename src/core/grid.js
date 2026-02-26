@@ -86,12 +86,15 @@ export class GameGrid {
         }
 
         // Movement / Combat Logic
-        if (this.selectedUnit && this.isValidMove(node.id)) {
-            const unit = this.selectedUnit;
-            this.selectedUnit = null;
-            this.clearHighlights();
-            await this.executeMove(unit, node.id);
-            return;
+        if (this.selectedUnit) {
+            const movePath = this.getPath(this.selectedUnit.currentNode, node.id);
+            if (movePath) {
+                const unit = this.selectedUnit;
+                this.selectedUnit = null;
+                this.clearHighlights();
+                await this.animateMove(unit, movePath);
+                return;
+            }
         }
 
         this.selectedUnit = null;
@@ -101,72 +104,84 @@ export class GameGrid {
 
     showValidMoves(startNodeId, mp) {
         this.clearHighlights();
-        this.validMoveNodes = this.getReachableNodes(startNodeId, mp);
+        this.validMoveMap = this.getReachableNodesMap(startNodeId, mp);
 
-        this.validMoveNodes.forEach(nId => {
+        for (const [nId, path] of this.validMoveMap.entries()) {
             const el = document.querySelector(`.grid-point[data-id="${nId}"]`);
             if (el) {
                 const enemyThere = this.units.has(nId) && this.units.get(nId).owner !== this.gameState.currentPlayer;
-                el.style.boxShadow = enemyThere ? '0 0 15px #ff3333' : '0 0 15px #00ffcc';
+                el.style.boxShadow = enemyThere ? '0 0 15px #ff3333' : '0 0 20px #00ffcc';
+                el.classList.add('valid-move');
             }
-        });
+        }
     }
 
-    getReachableNodes(startId, mp) {
-        const reachable = new Set();
-        const queue = [{ id: startId, dist: 0 }];
+    getReachableNodesMap(startId, mp) {
+        const reachableMap = new Map();
+        const queue = [{ id: startId, dist: 0, path: [] }];
         const visited = new Set([startId]);
 
         while (queue.length > 0) {
-            const { id, dist } = queue.shift();
-            if (dist > 0) reachable.add(id);
+            const { id, dist, path } = queue.shift();
+            if (dist > 0) reachableMap.set(id, path);
             if (dist < mp) {
                 const neighbors = this.getNeighbors(id);
                 neighbors.forEach(nId => {
+                    const unitThere = this.units.get(nId);
+                    const isEnemy = unitThere && unitThere.owner !== this.gameState.currentPlayer;
+
                     if (!visited.has(nId)) {
-                        const unitThere = this.units.get(nId);
-                        // Can enter node with enemy to fight, but dist stops there
-                        if (unitThere && unitThere.owner !== this.gameState.currentPlayer) {
-                            reachable.add(nId);
+                        if (isEnemy) {
+                            reachableMap.set(nId, [...path, nId]);
                             visited.add(nId);
                         } else if (!unitThere) {
                             visited.add(nId);
-                            queue.push({ id: nId, dist: dist + 1 });
+                            queue.push({ id: nId, dist: dist + 1, path: [...path, nId] });
                         }
                     }
                 });
             }
         }
-        return Array.from(reachable);
+        return reachableMap;
     }
 
-    getNeighbors(nodeId) {
-        return this.connections
-            .filter(c => c.includes(nodeId))
-            .map(c => c[0] === nodeId ? c[1] : c[0]);
+    getPath(startId, endId) {
+        if (!this.validMoveMap) return null;
+        return this.validMoveMap.get(endId);
     }
 
-    isValidMove(nodeId) {
-        return this.validMoveNodes && this.validMoveNodes.includes(nodeId);
-    }
+    async animateMove(unit, path) {
+        const oldId = unit.currentNode;
+        this.units.delete(oldId);
 
-    async executeMove(unit, targetNodeId) {
-        const enemyUnit = this.units.get(targetNodeId);
+        for (let i = 0; i < path.length; i++) {
+            const nodeId = path[i];
+            const isLast = i === path.length - 1;
+            const enemyUnit = this.units.get(nodeId);
 
-        if (enemyUnit && enemyUnit.owner !== unit.owner) {
-            // Combat Trigger
-            const result = await this.startCombat(unit, enemyUnit);
-            if (result === 'attacker_wins') {
-                this.deleteUnit(targetNodeId);
-                this.moveUnitToNode(unit, targetNodeId);
-            } else if (result === 'defender_wins') {
-                this.deleteUnit(unit.currentNode);
+            if (enemyUnit && enemyUnit.owner !== unit.owner && isLast) {
+                const result = await this.startCombat(unit, enemyUnit);
+                if (result === 'attacker_wins') {
+                    this.deleteUnit(nodeId);
+                    this.placeUnit(unit, nodeId);
+                } else if (result === 'defender_wins') {
+                    this.deleteUnit(unit.currentNode);
+                    return;
+                }
+                break;
+            } else {
+                this.placeUnit(unit, nodeId);
+                await new Promise(r => setTimeout(r, 200));
             }
-            // If draw or defend, unit stays or bounces? GDD says: "Ganha quem tiver maior Dano"
-            // Assuming survivor stays in place.
-        } else {
-            this.moveUnitToNode(unit, targetNodeId);
         }
+
+        const finalNode = this.nodes[unit.currentNode];
+        if (finalNode.type === 'core' && finalNode.team !== unit.owner) {
+            alert(`SISTEMA INVADIDO! ${unit.owner.toUpperCase()} VENCEU!`);
+            location.reload();
+        }
+
+        this.checkSurround(unit.currentNode);
     }
 
     moveUnitToNode(unit, targetNodeId) {
