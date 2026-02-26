@@ -30,16 +30,13 @@ export class DataWheel {
         const pA = this.getPriority(atkRes.type);
         const pB = this.getPriority(defRes.type);
 
-        // 🔵 Blue logic
         if (atkRes.type === 'blue' && defRes.type !== 'blue') return 'attacker_defends';
         if (defRes.type === 'blue' && atkRes.type !== 'blue') return 'defender_defends';
         if (atkRes.type === 'blue' && defRes.type === 'blue') return 'draw';
 
-        // Dominance
         if (pA > pB) return 'attacker_wins';
         if (pB > pA) return 'defender_wins';
 
-        // Ties
         if (atkRes.type === 'white') {
             if (atkRes.power > defRes.power) return 'attacker_wins';
             if (defRes.power > atkRes.power) return 'defender_wins';
@@ -60,25 +57,21 @@ export class DataWheel {
         this.resultText.innerText = '';
         this.battleLog.innerText = 'INITIALIZING COMBAT PROTOCOL...';
 
-        // Setup Versus
         this.atAvatar.innerText = attacker.icon;
         this.atName.innerText = attacker.name;
         this.dfAvatar.innerText = defender.icon;
         this.dfName.innerText = defender.name;
 
-        // Step 1: Attacker Spin
         this.battleLog.innerText = `> ATTACKER SPINNING: ${attacker.name}`;
         const atkRes = await this.spinOnce(attacker);
         this.battleLog.innerText = `> ATTACKER RESULT: ${atkRes.label.toUpperCase()}`;
         await new Promise(r => setTimeout(r, 1000));
 
-        // Step 2: Defender Spin
         this.battleLog.innerText = `> DEFENDER SPINNING: ${defender.name}`;
         const defRes = await this.spinOnce(defender);
         this.battleLog.innerText = `> DEFENDER RESULT: ${defRes.label.toUpperCase()}`;
         await new Promise(r => setTimeout(r, 1000));
 
-        // Step 3: Resolve
         const winnerKey = DataWheel.resolveCombat(attacker, defender, atkRes, defRes);
         this.animateResolution(winnerKey);
 
@@ -133,17 +126,44 @@ export class DataWheel {
         ctx.clearRect(0, 0, 280, 280);
         let startAngle = 0;
         const totalSize = 96;
+        const centerX = 140;
+        const centerY = 140;
+        const radius = 135;
 
         wheel.forEach(segment => {
             const angle = (segment.size / totalSize) * 2 * Math.PI;
+
+            // Draw Sector
             ctx.beginPath();
-            ctx.moveTo(140, 140);
-            ctx.arc(140, 140, 135, startAngle, startAngle + angle);
+            ctx.moveTo(centerX, centerY);
+            ctx.arc(centerX, centerY, radius, startAngle, startAngle + angle);
             ctx.fillStyle = this.colors[segment.type];
             ctx.fill();
-            ctx.strokeStyle = 'rgba(0,0,0,0.3)';
-            ctx.lineWidth = 2;
+            ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+            ctx.lineWidth = 1;
             ctx.stroke();
+
+            // Draw Text
+            ctx.save();
+            ctx.translate(centerX, centerY);
+            ctx.rotate(startAngle + angle / 2);
+
+            ctx.textAlign = "right";
+            ctx.fillStyle = (segment.type === 'white' || segment.type === 'gold') ? "#000" : "#fff";
+            ctx.font = "bold 10px 'JetBrains Mono'";
+
+            // Display Label
+            const text = segment.label.toUpperCase();
+            const subText = segment.power ? `[${segment.power}]` : (segment.stars ? '⭐'.repeat(segment.stars) : '');
+
+            ctx.fillText(text, radius - 15, 0);
+            if (subText) {
+                ctx.font = "8px 'JetBrains Mono'";
+                ctx.fillText(subText, radius - 15, 12);
+            }
+
+            ctx.restore();
+
             startAngle += angle;
         });
     }
