@@ -118,14 +118,17 @@ body::after {
 /* GRAPH NODES */
 .grid-point {
     position: absolute;
-    width: 14px;
-    height: 14px;
+    width: 16px;
+    height: 16px;
     background: var(--cyan-neon);
     border-radius: 50%;
     transform: translate(-50%, -50%);
     box-shadow: 0 0 8px var(--cyan-neon);
     z-index: 2;
     cursor: pointer;
+    border: 20px solid transparent;
+    /* Hit Area boost */
+    background-clip: padding-box;
 }
 
 .grid-point.entry {
@@ -139,6 +142,23 @@ body::after {
     width: 22px;
     height: 22px;
     box-shadow: 0 0 15px var(--cyber-pink);
+}
+
+.grid-point.valid-move {
+    background: #00ffcc;
+    animation: node-pulse 1s infinite alternate;
+}
+
+@keyframes node-pulse {
+    from {
+        box-shadow: 0 0 10px #00ffcc;
+        transform: translate(-50%, -50%) scale(1);
+    }
+
+    to {
+        box-shadow: 0 0 30px #00ffcc;
+        transform: translate(-50%, -50%) scale(1.4);
+    }
 }
 
 .board-svg {
@@ -156,6 +176,8 @@ body::after {
     transform: translate(-50%, -50%);
     z-index: 10;
     transition: all 0.4s ease;
+    pointer-events: none;
+    /* Make clicks fall through to the nodes underneath */
 }
 
 .unit-disc .base {
@@ -230,6 +252,23 @@ body::after {
     cursor: pointer;
 }
 
+.music-toggle {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    background: rgba(0, 242, 255, 0.1);
+    border: 1px solid var(--cyan-neon);
+    color: var(--cyan-neon);
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 1500;
+}
+
 .action-btn.primary {
     background: var(--cyan-neon);
     color: black;
@@ -272,7 +311,6 @@ body::after {
     font-size: 1.2rem;
     background: rgba(255, 0, 85, 0.05);
     position: relative;
-    transition: all 0.5s ease;
 }
 
 .dc-slot.occupied {
@@ -307,35 +345,6 @@ body::after {
     gap: 15px;
 }
 
-.plate-card {
-    aspect-ratio: 2/3;
-    border: 1px solid rgba(0, 242, 255, 0.3);
-    padding: 10px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    cursor: pointer;
-    background: linear-gradient(135deg, rgba(0, 242, 255, 0.1), transparent);
-}
-
-.plate-card:hover {
-    border-color: var(--cyan-neon);
-    box-shadow: 0 0 15px var(--cyan-neon);
-}
-
-.plate-name {
-    font-size: 0.7rem;
-    font-weight: bold;
-    color: var(--cyan-neon);
-    text-transform: uppercase;
-}
-
-.plate-desc {
-    font-size: 0.55rem;
-    color: #aaa;
-    margin-top: 5px;
-}
-
 /* ANIMATIONS */
 @keyframes binary-burst {
     0% {
@@ -356,30 +365,9 @@ body::after {
     pointer-events: none;
 }
 
-@keyframes reboot-pulse {
-    0% {
-        transform: scale(1);
-        opacity: 1;
-    }
-
-    50% {
-        transform: scale(1.2);
-        opacity: 0.5;
-    }
-
-    100% {
-        transform: scale(1);
-        opacity: 1;
-    }
-}
-
-.rebooting {
-    animation: reboot-pulse 1s forwards;
-}
-
 @keyframes combat-shake {
     0% {
-        transform: translate(0, 0) rotate(0deg);
+        transform: translate(0, 0);
     }
 
     25% {
@@ -388,7 +376,7 @@ body::after {
 
     50% {
         transform: translate(-5px, -5px) rotate(-5deg);
-        filter: hue-rotate(90deg) brightness(2);
+        filter: brightness(2);
     }
 
     75% {
@@ -396,56 +384,10 @@ body::after {
     }
 
     100% {
-        transform: translate(0, 0) rotate(0deg);
+        transform: translate(0, 0);
     }
 }
 
 .combat-impact {
     animation: combat-shake 0.3s cubic-bezier(.36, .07, .19, .97) both;
-}
-
-.music-toggle {
-    position: absolute;
-    top: 15px;
-    left: 15px;
-    background: rgba(0, 242, 255, 0.1);
-    border: 1px solid var(--cyan-neon);
-    color: var(--cyan-neon);
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    z-index: 1500;
-    font-size: 0.8rem;
-    transition: all 0.3s ease;
-}
-
-.music-toggle.playing {
-    background: var(--cyan-neon);
-    color: black;
-    box-shadow: 0 0 15px var(--cyan-neon);
-}
-
-@keyframes result-popup {
-    0% {
-        transform: scale(0);
-        opacity: 0;
-    }
-
-    50% {
-        transform: scale(1.2);
-        opacity: 1;
-    }
-
-    100% {
-        transform: scale(1);
-        opacity: 1;
-    }
-}
-
-#wheel-result.active {
-    animation: result-popup 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }

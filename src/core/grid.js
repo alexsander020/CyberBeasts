@@ -10,6 +10,8 @@ export class GameGrid {
         this.connections = [];
         this.units = new Map();
         this.wheel = null;
+        this.selectedUnit = null;
+        this.validMoveMap = null;
         this.init();
     }
 
@@ -74,6 +76,7 @@ export class GameGrid {
     }
 
     async onNodeClick(node) {
+        console.log(`Node ${node.id} clicked. Unit there:`, this.units.get(node.id));
         const unitAtNode = this.units.get(node.id);
         const statusPanel = document.getElementById('status-panel');
 
@@ -87,12 +90,12 @@ export class GameGrid {
 
         // Movement / Combat Logic
         if (this.selectedUnit) {
-            const movePath = this.getPath(this.selectedUnit.currentNode, node.id);
-            if (movePath) {
+            const path = this.getPath(this.selectedUnit.currentNode, node.id);
+            if (path) {
                 const unit = this.selectedUnit;
                 this.selectedUnit = null;
                 this.clearHighlights();
-                await this.animateMove(unit, movePath);
+                await this.animateMove(unit, path);
                 return;
             }
         }
@@ -184,39 +187,25 @@ export class GameGrid {
         this.checkSurround(unit.currentNode);
     }
 
-    moveUnitToNode(unit, targetNodeId) {
-        const oldNodeId = unit.currentNode;
-        this.units.delete(oldNodeId);
-
-        const targetNode = this.nodes[targetNodeId];
-        if (targetNode.type === 'core' && targetNode.team !== unit.owner) {
-            alert(`SISTEMA INVADIDO! ${unit.owner.toUpperCase()} VENCEU!`);
-            location.reload();
-            return;
-        }
-
-        this.placeUnit(unit, targetNodeId);
-        this.checkSurround(targetNodeId);
+    async startCombat(attacker, defender) {
+        const result = await this.wheel.spin(attacker);
+        const resultDef = await this.wheel.spin(defender);
+        return DataWheel.resolveCombat(attacker, defender, result, resultDef);
     }
 
-    async startCombat(attacker, defender) {
-        const statusPanel = document.getElementById('status-panel');
-        statusPanel.innerHTML = `> COMBATE: ${attacker.name} vs ${defender.name}`;
-
-        // Spin for Attacker
-        const attackRes = await this.wheel.spin(attacker);
-        // Spin for Defender
-        const defendRes = await this.wheel.spin(defender);
-
-        const winner = DataWheel.resolveCombat(attacker, defender, attackRes, defendRes);
-        console.log(`Combat Result: ${winner}`);
-        return winner;
+    getNeighbors(nodeId) {
+        return this.connections
+            .filter(c => c.includes(nodeId))
+            .map(c => c[0] === nodeId ? c[1] : c[0]);
     }
 
     clearHighlights() {
         this.nodes.forEach(n => {
             const el = document.querySelector(`.grid-point[data-id="${n.id}"]`);
-            if (el) el.style.boxShadow = n.type === 'core' ? '0 0 15px #FF0055' : '0 0 8px var(--cyan-neon)';
+            if (el) {
+                el.style.boxShadow = n.type === 'core' ? '0 0 15px #FF0055' : '0 0 8px var(--cyan-neon)';
+                el.classList.remove('valid-move');
+            }
         });
     }
 
