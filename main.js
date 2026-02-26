@@ -2,32 +2,46 @@ import { GameGrid } from './src/core/grid.js';
 import { DataWheel } from './src/core/dataWheel.js';
 import { GameState } from './src/core/gameState.js';
 import { CyberBeast, INITIAL_BEASTS } from './src/entities/cyberbeast.js';
+import { CyberAI } from './src/core/ai.js';
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('CyberBeasts: Kernel v2.1 Initialized');
+    console.log('CyberBeasts: Kernel v2.2 Initialized');
 
     const state = new GameState();
     const grid = new GameGrid(state);
     const wheel = new DataWheel();
+    const ai = new CyberAI(grid, state);
 
-    // Populate Bench
+    // Populate Benches
     INITIAL_BEASTS.forEach(data => {
         state.addToBench(CyberBeast.fromJSON(data, 'player'), 'player');
+        state.addToBench(CyberBeast.fromJSON(data, 'enemy'), 'enemy');
     });
 
     renderBench(state);
-
-    // Initial Status Update
     state.updateUI();
 
-    // Listen for bench updates (reboots)
-    document.addEventListener('benchUpdated', (e) => {
-        renderBench(e.detail.state);
-    });
+    document.addEventListener('benchUpdated', (e) => renderBench(e.detail.state));
 
-    // Spawn Trigger Simulation
     const btnNext = document.getElementById('btn-next-turn');
-    if (btnNext) btnNext.addEventListener('click', () => state.nextTurn());
+    if (btnNext) {
+        btnNext.addEventListener('click', async () => {
+            if (state.currentPlayer !== 'player') return;
+
+            state.nextTurn();
+
+            // AI Turn
+            if (state.currentPlayer === 'enemy') {
+                const statusPanel = document.getElementById('status-panel');
+                statusPanel.innerHTML += "<br>> PENSAMENTO DA IA ATIVO...";
+
+                setTimeout(() => {
+                    ai.playTurn();
+                    state.nextTurn();
+                }, 1000);
+            }
+        });
+    }
 
     // Plates Modal Logic
     const btnPlates = document.getElementById('btn-plates');
@@ -58,7 +72,6 @@ document.addEventListener('DOMContentLoaded', () => {
             card.onclick = () => {
                 console.log(`Using Plate: ${plate.name}`);
                 platesModal.style.display = 'none';
-                // Effect implementation would go here
             };
             platesList.appendChild(card);
         });
@@ -75,7 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
             slot.innerHTML = '👾';
             slot.title = unit.name;
             slot.onclick = () => {
-                // Try to spawn at Entry Point 0 or 1
+                if (state.currentPlayer !== 'player') return;
                 const entryId = Math.random() > 0.5 ? 0 : 1;
                 grid.placeUnit(unit, entryId);
                 state.playerBench.splice(index, 1);

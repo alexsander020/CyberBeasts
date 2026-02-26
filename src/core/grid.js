@@ -69,17 +69,100 @@ export class GameGrid {
     }
 
     onNodeClick(node) {
-        // Simple move logic or spawn logic
-        console.log(`Node ${node.id} clicked.`);
-        this.checkSurround(node.id);
-    }
+        const unitAtNode = this.units.get(node.id);
+        const statusPanel = document.getElementById('status-panel');
 
-    placeUnit(unit, nodeId) {
-        if (this.units.has(nodeId)) {
-            console.warn("Node occupied - Logic for combat trigger goes here.");
+        // Selection Logic
+        if (unitAtNode && unitAtNode.owner === this.gameState.currentPlayer) {
+            this.selectedUnit = unitAtNode;
+            this.showValidMoves(node.id, unitAtNode.mp);
+            statusPanel.innerHTML = `> UNIDADE SELECIONADA: ${unitAtNode.name}<br>> MP DISPONÍVEL: ${unitAtNode.mp}`;
             return;
         }
 
+        // Movement Logic
+        if (this.selectedUnit && this.isValidMove(node.id)) {
+            this.executeMove(this.selectedUnit, node.id);
+            this.selectedUnit = null;
+            this.clearHighlights();
+            return;
+        }
+
+        this.selectedUnit = null;
+        this.clearHighlights();
+        statusPanel.innerHTML = `> NODO ADJACENTE: ${node.id}`;
+    }
+
+    showValidMoves(startNodeId, mp) {
+        this.clearHighlights();
+        this.validMoveNodes = this.getReachableNodes(startNodeId, mp);
+
+        this.validMoveNodes.forEach(nId => {
+            const el = document.querySelector(`.grid-point[data-id="${nId}"]`);
+            if (el) el.style.boxShadow = '0 0 15px #00ffcc';
+        });
+    }
+
+    getReachableNodes(startId, mp) {
+        const reachable = new Set();
+        const queue = [{ id: startId, dist: 0 }];
+        const visited = new Set([startId]);
+
+        while (queue.length > 0) {
+            const { id, dist } = queue.shift();
+            if (dist > 0) reachable.add(id);
+            if (dist < mp) {
+                const neighbors = this.getNeighbors(id);
+                neighbors.forEach(nId => {
+                    if (!visited.has(nId)) {
+                        const unitThere = this.units.get(nId);
+                        // Can pass through own units? GDD doesn't specify, assuming block for now
+                        if (!unitThere) {
+                            visited.add(nId);
+                            queue.push({ id: nId, dist: dist + 1 });
+                        }
+                    }
+                });
+            }
+        }
+        return Array.from(reachable);
+    }
+
+    getNeighbors(nodeId) {
+        return this.connections
+            .filter(c => c.includes(nodeId))
+            .map(c => c[0] === nodeId ? c[1] : c[0]);
+    }
+
+    isValidMove(nodeId) {
+        return this.validMoveNodes && this.validMoveNodes.includes(nodeId);
+    }
+
+    executeMove(unit, targetNodeId) {
+        const oldNodeId = unit.currentNode;
+        this.units.delete(oldNodeId);
+
+        // Check for Goal (Core Conquest)
+        const targetNode = this.nodes[targetNodeId];
+        if (targetNode.type === 'core' && targetNode.team !== unit.owner) {
+            alert(`SISTEMA INVADIDO! ${unit.owner.toUpperCase()} VENCEU!`);
+            location.reload();
+            return;
+        }
+
+        this.placeUnit(unit, targetNodeId);
+        console.log(`${unit.name} moved to ${targetNodeId}`);
+        this.checkSurround(targetNodeId);
+    }
+
+    clearHighlights() {
+        this.nodes.forEach(n => {
+            const el = document.querySelector(`.grid-point[data-id="${n.id}"]`);
+            if (el) el.style.boxShadow = n.type === 'core' ? '0 0 15px #FF0055' : '0 0 8px var(--cyan-neon)';
+        });
+    }
+
+    placeUnit(unit, nodeId) {
         const node = this.nodes[nodeId];
         unit.currentNode = nodeId;
         this.units.set(nodeId, unit);

@@ -66,6 +66,48 @@ body::after {
     border-radius: 8px;
     text-align: center;
     box-shadow: 0 0 10px var(--cyber-pink);
+    animation: glitch-flicker 4s infinite;
+}
+
+@keyframes glitch-flicker {
+
+    0%,
+    100% {
+        opacity: 1;
+        transform: skew(0deg);
+    }
+
+    31% {
+        opacity: 1;
+        transform: skew(0deg);
+    }
+
+    32% {
+        opacity: 0.8;
+        transform: skew(3deg);
+    }
+
+    33% {
+        opacity: 1;
+        transform: skew(0deg);
+    }
+
+    34% {
+        opacity: 0.9;
+        transform: skew(-2deg);
+    }
+
+    35% {
+        opacity: 1;
+        transform: skew(0deg);
+    }
+}
+
+.player-name {
+    font-size: 0.8rem;
+    font-weight: bold;
+    color: white;
+    text-shadow: 1px 1px var(--cyan-neon), -1px -1px var(--cyber-pink);
 }
 
 #game-container {
@@ -169,6 +211,7 @@ body::after {
     justify-content: center;
     font-size: 1.2rem;
     background: rgba(0, 242, 255, 0.05);
+    cursor: pointer;
 }
 
 .action-bar {
