@@ -18,10 +18,12 @@ export class CyberBeast {
         this.mp = data.mp || 2;
         this.icon = data.icon || '👾';
         this.color = data.color || '#fff';
-        this.wheel = data.wheel || []; // Array of {type, label, size, power, stars}
+        this.wheel = data.wheel || [];
         this.hp = 1;
         this.owner = data.owner || 'player';
         this.currentNode = null;
+        this.hasActed = false;
+        this.status = 'active';
     }
 
     static fromJSON(json, owner) {
@@ -35,13 +37,13 @@ export const INITIAL_BEASTS = [
         type: "Striker",
         rarity: "EX",
         mp: 2,
-        icon: "🧧",
+        icon: "🐉",
         color: "#ff3333",
         wheel: [
-            { type: "white", label: "Data Claw", size: 40, power: 120 },
-            { type: "purple", label: "System Crash", size: 24, stars: 3 },
-            { type: "blue", label: "Protect", size: 12 },
-            { type: "red", label: "Miss", size: 20 }
+            { type: "white", label: "Data Claw", size: 36, power: 140 },
+            { type: "purple", label: "System Crash", size: 28, stars: 3 },
+            { type: "blue", label: "Protect", size: 16 },
+            { type: "red", label: "Miss", size: 16 }
         ]
     },
     {
@@ -49,12 +51,13 @@ export const INITIAL_BEASTS = [
         type: "Tank",
         rarity: "R",
         mp: 1,
-        icon: "🧱",
+        icon: "🛡️",
         color: "#0088ff",
         wheel: [
-            { type: "white", label: "Heavy Slam", size: 50, power: 140 },
-            { type: "blue", label: "Hard Shield", size: 30 },
-            { type: "red", label: "Miss", size: 16 }
+            { type: "white", label: "Heavy Slam", size: 40, power: 100 },
+            { type: "blue", label: "Hard Shield", size: 40 },
+            { type: "purple", label: "Reboot", size: 10, stars: 1 },
+            { type: "red", label: "Miss", size: 6 }
         ]
     },
     {
@@ -62,12 +65,12 @@ export const INITIAL_BEASTS = [
         type: "Speedster",
         rarity: "UC",
         mp: 3,
-        icon: "🏹",
+        icon: "⚡",
         color: "#00ffcc",
         wheel: [
-            { type: "gold", label: "Quick Jab", size: 30, power: 40 },
-            { type: "white", label: "Dagger", size: 30, power: 60 },
-            { type: "red", label: "Miss", size: 36 }
+            { type: "gold", label: "Quick Jab", size: 45, power: 60 },
+            { type: "white", label: "Dagger", size: 25, power: 80 },
+            { type: "red", label: "Miss", size: 26 }
         ]
     }
 ];

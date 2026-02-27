@@ -4,25 +4,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="CyberBeasts: Core Conquest — Jogo de estratégia tática cyberpunk com criaturas digitais">
     <title>CyberBeasts: Core Conquest</title>
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐉</text></svg>">
     <link rel="stylesheet" href="./style.css">
 </head>
 
 <body>
     <div id="game-shell">
-        <button class="music-toggle" id="btn-music">🎵</button>
+        <button class="music-toggle" id="btn-music" title="Ligar/Desligar Música">🎵</button>
+        <button class="help-toggle" id="btn-help" title="Como Jogar">❓</button>
         <audio id="bg-music" loop src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"></audio>
 
         <header class="game-header">
             <div class="player-profile">
-                <span class="player-name">USER</span>
+                <span class="player-name">JOGADOR</span>
             </div>
             <div class="turn-counter">
-                <div style="font-size: 0.6rem; color: #aaa;">回合 / TURN</div>
+                <div style="font-size: 0.6rem; color: #aaa;">TURNO</div>
                 <div id="turn-val" style="font-size: 1.2rem; font-weight: bold; color: #00F2FF;">1</div>
             </div>
             <div class="player-profile" style="text-align: right;">
-                <span class="player-name">ENEMY</span>
+                <span class="player-name" style="color: var(--cyber-pink);">INIMIGO</span>
             </div>
         </header>
 
@@ -32,79 +37,146 @@
             <div id="units-layer"></div>
 
             <div class="data-center-hud" id="dc-hud">
-                <div class="dc-slot" id="dc-0"></div>
-                <div class="dc-slot" id="dc-1"></div>
+                <div class="dc-label">DATA CENTER</div>
+                <div class="dc-slot" id="dc-0" title="Slot vazio — unidades deletadas vão para cá"></div>
+                <div class="dc-slot" id="dc-1" title="Slot vazio — unidades deletadas vão para cá"></div>
+                <div class="dc-info">Quando lotado, a unidade mais antiga reboota.</div>
             </div>
 
-            <div id="status-panel"
-                style="position: absolute; top: 10px; left: 10px; font-family: 'JetBrains Mono'; font-size: 0.7rem; color: var(--cyan-neon);">
-                > KERNEL LOADED
+            <div id="status-panel">
+                > KERNEL v3.0 CARREGADO
             </div>
         </main>
 
+        <!-- Plates Modal -->
         <div id="plates-modal">
             <div class="plates-container-wrapper">
                 <button class="btn-close-modal" id="btn-close-plates">×</button>
-                <div class="plates-container" id="plates-list">
-                    <!-- Plates go here -->
-                </div>
+                <h3 class="modal-title">PLACAS ESPECIAIS</h3>
+                <div class="plates-container" id="plates-list"></div>
             </div>
         </div>
 
+        <!-- Turn Splash -->
         <div id="turn-splash" class="turn-overlay">
-            <div class="splash-text" id="splash-text">YOUR TURN</div>
+            <div class="splash-text" id="splash-text">SEU TURNO</div>
         </div>
 
+        <!-- Data Wheel / Combat Overlay -->
         <div id="wheel-overlay">
-            <!-- Confrontation Header -->
-            <div id="versus-container" style="display: flex; gap: 50px; align-items: center; margin-bottom: 30px;">
-                <div id="attacker-card" class="fighter-card" style="text-align: center;">
-                    <div id="attacker-avatar"
-                        style="font-size: 3.5rem; filter: drop-shadow(0 0 10px var(--cyan-neon));"></div>
-                    <div id="attacker-name-label"
-                        style="font-size: 0.8rem; font-weight: bold; color: var(--cyan-neon); letter-spacing: 2px;">
-                    </div>
+            <div id="battle-flash"></div>
+            <div class="battle-phase-label" id="battle-phase">⚔️ PROTOCOLO DE COMBATE</div>
+
+            <div id="versus-container">
+                <div id="attacker-card" class="fighter-card fighter-attacker">
+                    <div class="fighter-badge">ATACANTE</div>
+                    <div class="fighter-avatar" id="attacker-avatar"></div>
+                    <div class="fighter-name" id="attacker-name-label"></div>
+                    <div class="fighter-meta" id="attacker-meta"></div>
+                    <div class="fighter-spin-result" id="attacker-spin-result">—</div>
                 </div>
-                <div
-                    style="font-size: 2.5rem; font-weight: 900; color: white; transform: skew(-15deg); font-family: 'JetBrains Mono';">
-                    VS</div>
-                <div id="defender-card" class="fighter-card" style="text-align: center;">
-                    <div id="defender-avatar"
-                        style="font-size: 3.5rem; filter: drop-shadow(0 0 10px var(--cyber-pink));"></div>
-                    <div id="defender-name-label"
-                        style="font-size: 0.8rem; font-weight: bold; color: var(--cyber-pink); letter-spacing: 2px;">
-                    </div>
+
+                <div class="vs-divider">
+                    <div class="vs-text">VS</div>
+                    <div class="vs-spark"></div>
+                </div>
+
+                <div id="defender-card" class="fighter-card fighter-defender">
+                    <div class="fighter-badge">DEFENSOR</div>
+                    <div class="fighter-avatar" id="defender-avatar"></div>
+                    <div class="fighter-name" id="defender-name-label"></div>
+                    <div class="fighter-meta" id="defender-meta"></div>
+                    <div class="fighter-spin-result" id="defender-spin-result">—</div>
                 </div>
             </div>
 
-            <!-- The Data Wheel -->
-            <div id="wheel-container"
-                style="width: 280px; height: 280px; border-radius: 50%; border: 4px solid white; position: relative; box-shadow: 0 0 40px rgba(255,255,255,0.2); transition: transform 3.5s cubic-bezier(0.15, 0, 0.15, 1);">
-                <canvas id="wheel-canvas" width="280" height="280"></canvas>
-                <div id="wheel-marker"
-                    style="position: absolute; top: -20px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 15px solid transparent; border-right: 15px solid transparent; border-top: 30px solid #fff; filter: drop-shadow(0 5px 5px black); z-index: 100;">
+            <div class="wheel-section">
+                <div class="wheel-spinning-label" id="spinning-label">GIRANDO...</div>
+                <div id="wheel-container">
+                    <canvas id="wheel-canvas" width="320" height="320"></canvas>
+                    <div id="wheel-center-dot"></div>
+                    <div id="wheel-marker"></div>
                 </div>
             </div>
 
-            <!-- Result & Logs -->
-            <div id="battle-log"
-                style="margin-top: 25px; min-height: 20px; font-family: 'JetBrains Mono'; color: #00ffcc; font-size: 0.75rem; background: rgba(0,0,0,0.6); padding: 5px 20px; border-left: 4px solid var(--cyan-neon); text-transform: uppercase;">
-                INITIATING COMBAT PROTOCOL...
+            <div id="battle-log">INICIANDO PROTOCOLO DE COMBATE...</div>
+
+            <div id="wheel-result"></div>
+        </div>
+
+        <!-- Victory/Defeat Overlay -->
+        <div id="victory-overlay">
+            <div class="victory-content">
+                <div class="victory-title" id="victory-title">VITÓRIA!</div>
+                <div class="victory-subtitle" id="victory-subtitle">Sistema inimigo invadido.</div>
+                <button class="victory-btn" id="btn-restart">JOGAR NOVAMENTE</button>
             </div>
-            <div id="wheel-result"
-                style="margin-top: 15px; font-size: 2rem; font-weight: 900; text-shadow: 0 0 15px white; letter-spacing: 1px;">
+        </div>
+
+        <!-- Surrender Confirmation -->
+        <div id="surrender-modal">
+            <div class="surrender-content">
+                <div class="surrender-title">⚠️ RENDIÇÃO</div>
+                <div class="surrender-text">Tem certeza que deseja se render? Esta ação não pode ser desfeita.</div>
+                <div class="surrender-buttons">
+                    <button class="action-btn" id="btn-cancel-surrender">CANCELAR</button>
+                    <button class="action-btn danger" id="btn-confirm-surrender">CONFIRMAR</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tutorial Modal -->
+        <div id="tutorial-modal">
+            <div class="tutorial-content">
+                <button class="btn-close-modal" id="btn-close-tutorial">×</button>
+                <h2 class="tutorial-title">⚡ COMO JOGAR</h2>
+                <div class="tutorial-sections">
+                    <div class="tutorial-section">
+                        <h3>🎯 OBJETIVO</h3>
+                        <p>Mova suas CyberBeasts pelo tabuleiro e <strong>invada o Core inimigo</strong> (nodo rosa no
+                            topo) para vencer!</p>
+                    </div>
+                    <div class="tutorial-section">
+                        <h3>📋 TURNO DO JOGADOR</h3>
+                        <p>1. <strong>Spawnar:</strong> Clique em uma unidade do banco (embaixo) para colocá-la em um
+                            Portal de Entrada.</p>
+                        <p>2. <strong>Mover:</strong> Clique em uma unidade no tabuleiro, depois clique em um nodo verde
+                            para mover.</p>
+                        <p>3. <strong>Próximo Turno:</strong> Clique no botão para a IA jogar.</p>
+                    </div>
+                    <div class="tutorial-section">
+                        <h3>⚔️ COMBATE</h3>
+                        <p>Quando sua unidade se move para um nodo com inimigo, a <strong>Data Wheel</strong> gira para
+                            ambos. O resultado decide quem vence!</p>
+                        <p>🔵 Azul = Defesa &nbsp; 🟡 Ouro = Prioridade &nbsp; 🟣 Roxo = Glitch &nbsp; ⚪ Branco = Normal
+                            &nbsp; 🔴 Vermelho = Miss</p>
+                    </div>
+                    <div class="tutorial-section">
+                        <h3>💀 DATA CENTER</h3>
+                        <p>Unidades eliminadas vão para o Data Center (2 slots no canto). Quando o 3º slot é ocupado, a
+                            mais antiga <strong>reboota</strong> de volta ao banco!</p>
+                    </div>
+                    <div class="tutorial-section">
+                        <h3>🃏 PLACAS</h3>
+                        <p><strong>Overclock:</strong> +1 MP para todas as unidades em campo</p>
+                        <p><strong>Data Repair:</strong> Retorna uma unidade ao banco</p>
+                        <p><strong>Firewall:</strong> Bloqueia um nodo aleatório por 1 turno</p>
+                    </div>
+                </div>
             </div>
         </div>
 
         <footer class="game-footer">
-            <div style="font-size: 0.5rem; color: #666; text-transform: uppercase;">Bench Units (Click to spawn)</div>
-            <div class="bench-lane" id="bench-slots">
-                <!-- Units go here -->
+            <div class="bench-header">
+                <span style="font-size: 0.5rem; color: #888; text-transform: uppercase;">Banco de Unidades (Clique para
+                    spawnar)</span>
+                <span id="bench-count" style="font-size: 0.5rem; color: var(--cyan-neon);">3 unidade(s) no banco</span>
             </div>
+            <div class="bench-lane" id="bench-slots"></div>
             <div class="action-bar">
-                <button class="action-btn" id="btn-plates">Plates</button>
-                <button class="action-btn primary" id="btn-next-turn">Next Turn</button>
-                <button class="action-btn">Surrender</button>
+                <button class="action-btn" id="btn-plates">Placas</button>
+                <button class="action-btn primary" id="btn-next-turn">PRÓXIMO TURNO</button>
+                <button class="action-btn" id="btn-surrender">Rendição</button>
             </div>
         </footer>
     </div>

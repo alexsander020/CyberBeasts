@@ -57,34 +57,67 @@ export class GameGrid {
             const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
             line.setAttribute("x1", `${s.x}%`); line.setAttribute("y1", `${s.y}%`);
             line.setAttribute("x2", `${e.x}%`); line.setAttribute("y2", `${e.y}%`);
-            line.setAttribute("stroke", "rgba(0, 242, 255, 0.3)");
+            line.setAttribute("stroke", "rgba(0, 242, 255, 0.4)");
             line.setAttribute("stroke-width", "2");
+            line.setAttribute("stroke-dasharray", "6,4");
+            line.classList.add('grid-line');
             this.svg.appendChild(line);
         });
 
         this.nodes.forEach(node => {
             const el = document.createElement('div');
             el.className = `grid-point ${node.type}`;
+            if (node.type === 'core' && node.team === 'player') el.classList.add('core-player');
+            if (node.type === 'core' && node.team === 'enemy') el.classList.add('core-enemy');
             el.style.left = `${node.x}%`; el.style.top = `${node.y}%`;
             el.dataset.id = node.id;
 
-            if (node.type === 'core') el.style.boxShadow = '0 0 15px #FF0055';
+            // Add label
+            const label = document.createElement('span');
+            label.className = 'node-label';
+            if (node.type === 'core') label.innerText = node.team === 'player' ? '🔵 SEU CORE' : '🔴 CORE INIMIGO';
+            else if (node.type === 'entry') label.innerText = node.team === 'player' ? 'ENTRADA' : 'SAÍDA';
+            el.appendChild(label);
 
-            el.addEventListener('click', () => this.onNodeClick(node));
+            el.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.onNodeClick(node);
+            });
             this.container.appendChild(el);
         });
     }
 
     async onNodeClick(node) {
-        console.log(`Node ${node.id} clicked. Unit there:`, this.units.get(node.id));
+        if (this.gameState.gameOver) return;
+
+        console.log(`Nodo ${node.id} clicado. Unidade:`, this.units.get(node.id));
         const unitAtNode = this.units.get(node.id);
         const statusPanel = document.getElementById('status-panel');
 
+        // Check if node is blocked
+        if (this.gameState.blockedNodes.has(node.id) && !unitAtNode) {
+            statusPanel.innerHTML = `> ⛔ NODO ${node.id} BLOQUEADO POR FIREWALL`;
+            const blockedEl = document.querySelector(`.grid-point[data-id="${node.id}"]`);
+            if (blockedEl) blockedEl.classList.add('shake-feedback');
+            setTimeout(() => blockedEl?.classList.remove('shake-feedback'), 400);
+            return;
+        }
+
         // Selection Logic
         if (unitAtNode && unitAtNode.owner === this.gameState.currentPlayer) {
+            if (unitAtNode.hasActed) {
+                statusPanel.innerHTML = `> ⚠️ ${unitAtNode.name.toUpperCase()} JÁ AGIU NESTE TURNO`;
+                // Shake feedback on the unit
+                const unitEl = document.getElementById(`unit-${unitAtNode.uuid}`);
+                if (unitEl) {
+                    unitEl.classList.add('shake-feedback');
+                    setTimeout(() => unitEl.classList.remove('shake-feedback'), 400);
+                }
+                return;
+            }
             this.selectedUnit = unitAtNode;
             this.showValidMoves(node.id, unitAtNode.mp);
-            statusPanel.innerHTML = `> UNIDADE SELECIONADA: ${unitAtNode.name}<br>> MP DISPONÍVEL: ${unitAtNode.mp}`;
+            statusPanel.innerHTML = `> SELECIONADO: ${unitAtNode.name}<br>> MP: ${unitAtNode.mp} | TIPO: ${unitAtNode.type}<br>> RARIDADE: ${unitAtNode.rarity}`;
             return;
         }
 
@@ -96,13 +129,39 @@ export class GameGrid {
                 this.selectedUnit = null;
                 this.clearHighlights();
                 await this.animateMove(unit, path);
+                unit.hasActed = true;
+                this.updateUnitVisual(unit);
+                statusPanel.innerHTML = `> ${unit.name.toUpperCase()} moveu para nodo ${node.id}`;
                 return;
             }
         }
 
         this.selectedUnit = null;
         this.clearHighlights();
-        statusPanel.innerHTML = `> NODO SELECIONADO: ${node.id}`;
+        if (node.type === 'core') {
+            statusPanel.innerHTML = `> CORE: ${node.team === 'player' ? 'Seu núcleo — proteja!' : 'Alvo inimigo — invada!'}`;
+        } else if (node.type === 'entry') {
+            statusPanel.innerHTML = `> PORTAL: ${node.team === 'player' ? 'Entrada para suas unidades' : 'Portal inimigo'}`;
+        } else {
+            statusPanel.innerHTML = `> NODO ${node.id}: ${unitAtNode ? `Ocupado por ${unitAtNode.name}` : 'Vazio'}`;
+        }
+    }
+
+    updateUnitVisual(unit) {
+        const el = document.getElementById(`unit-${unit.uuid}`);
+        if (el) {
+            if (unit.hasActed) {
+                el.classList.add('has-acted');
+            } else {
+                el.classList.remove('has-acted');
+            }
+        }
+    }
+
+    refreshAllUnitVisuals() {
+        for (const unit of this.units.values()) {
+            this.updateUnitVisual(unit);
+        }
     }
 
     showValidMoves(startNodeId, mp) {
@@ -110,6 +169,9 @@ export class GameGrid {
         this.validMoveMap = this.getReachableNodesMap(startNodeId, mp);
 
         for (const [nId, path] of this.validMoveMap.entries()) {
+            // Skip blocked nodes (unless enemy is there)
+            if (this.gameState.blockedNodes.has(nId) && !this.units.has(nId)) continue;
+
             const el = document.querySelector(`.grid-point[data-id="${nId}"]`);
             if (el) {
                 const enemyThere = this.units.has(nId) && this.units.get(nId).owner !== this.gameState.currentPlayer;
@@ -164,11 +226,30 @@ export class GameGrid {
 
             if (enemyUnit && enemyUnit.owner !== unit.owner && isLast) {
                 const result = await this.startCombat(unit, enemyUnit);
+
                 if (result === 'attacker_wins') {
                     this.deleteUnit(nodeId);
                     this.placeUnit(unit, nodeId);
                 } else if (result === 'defender_wins') {
-                    this.deleteUnit(unit.currentNode);
+                    // Attacker is destroyed, place back doesn't happen
+                    const lastSafe = i > 0 ? path[i - 1] : oldId;
+                    // Unit is destroyed
+                    const el = document.getElementById(`unit-${unit.uuid}`);
+                    if (el) {
+                        el.classList.add('deleting');
+                        setTimeout(() => el.remove(), 600);
+                    }
+                    this.gameState.moveToDataCenter(unit);
+                    return;
+                } else if (result === 'attacker_defends' || result === 'defender_defends') {
+                    // Both survive — attacker goes back to previous safe position
+                    const lastSafe = i > 0 ? path[i - 1] : oldId;
+                    this.placeUnit(unit, lastSafe);
+                    return;
+                } else {
+                    // Draw — both survive, attacker stays in last safe position
+                    const lastSafe = i > 0 ? path[i - 1] : oldId;
+                    this.placeUnit(unit, lastSafe);
                     return;
                 }
                 break;
@@ -180,8 +261,7 @@ export class GameGrid {
 
         const finalNode = this.nodes[unit.currentNode];
         if (finalNode.type === 'core' && finalNode.team !== unit.owner) {
-            alert(`SISTEMA INVADIDO! ${unit.owner.toUpperCase()} VENCEU!`);
-            location.reload();
+            this.gameState.showVictory(unit.owner);
         }
 
         this.checkSurround(unit.currentNode);
@@ -189,7 +269,7 @@ export class GameGrid {
 
     async startCombat(attacker, defender) {
         const winner = await this.wheel.fullBattle(attacker, defender);
-        console.log(`Combat Resolution: ${winner}`);
+        console.log(`Resultado do combate: ${winner}`);
         return winner;
     }
 
@@ -202,8 +282,9 @@ export class GameGrid {
     clearHighlights() {
         this.nodes.forEach(n => {
             const el = document.querySelector(`.grid-point[data-id="${n.id}"]`);
-            if (el) {
-                el.style.boxShadow = n.type === 'core' ? '0 0 15px #FF0055' : '0 0 8px var(--cyan-neon)';
+            if (el && !el.classList.contains('blocked-node')) {
+                const coreColor = n.team === 'player' ? 'var(--cyan-neon)' : '#FF0055';
+                el.style.boxShadow = n.type === 'core' ? `0 0 15px ${coreColor}` : '0 0 8px var(--cyan-neon)';
                 el.classList.remove('valid-move');
             }
         });
@@ -212,19 +293,28 @@ export class GameGrid {
     placeUnit(unit, nodeId) {
         const node = this.nodes[nodeId];
         unit.currentNode = nodeId;
+        unit.status = 'field';
         this.units.set(nodeId, unit);
 
         let unitEl = document.getElementById(`unit-${unit.uuid}`);
+        const isNew = !unitEl;
         if (!unitEl) {
             unitEl = document.createElement('div');
             unitEl.id = `unit-${unit.uuid}`;
             unitEl.className = `unit-disc ${unit.owner}`;
-            unitEl.innerHTML = `<div class="base" style="border-color: ${unit.color}"></div><div class="visual">${unit.icon}</div>`;
+            unitEl.innerHTML = `<div class="base" style="border-color: ${unit.color}"></div><div class="visual">${unit.icon}</div><div class="unit-name-tag">${unit.name.split(' ')[0]}</div>`;
             this.unitsLayer.appendChild(unitEl);
         }
 
         unitEl.style.left = `${node.x}%`;
         unitEl.style.top = `${node.y}%`;
+
+        if (isNew) {
+            unitEl.classList.add('spawning');
+            setTimeout(() => unitEl.classList.remove('spawning'), 600);
+        }
+
+        this.updateUnitVisual(unit);
     }
 
     checkSurround(nodeId) {
