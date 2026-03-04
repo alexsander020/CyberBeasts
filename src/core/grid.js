@@ -54,12 +54,18 @@ export class GameGrid {
         this.connections.forEach(([sId, eId]) => {
             const s = this.nodes[sId];
             const e = this.nodes[eId];
+
+            // Outer Glow Path
+            const glowLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            glowLine.setAttribute("x1", `${s.x}%`); glowLine.setAttribute("y1", `${s.y}%`);
+            glowLine.setAttribute("x2", `${e.x}%`); glowLine.setAttribute("y2", `${e.y}%`);
+            glowLine.classList.add('grid-line-glow');
+            this.svg.appendChild(glowLine);
+
+            // Inner Data Flow
             const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
             line.setAttribute("x1", `${s.x}%`); line.setAttribute("y1", `${s.y}%`);
             line.setAttribute("x2", `${e.x}%`); line.setAttribute("y2", `${e.y}%`);
-            line.setAttribute("stroke", "rgba(0, 242, 255, 0.4)");
-            line.setAttribute("stroke-width", "2");
-            line.setAttribute("stroke-dasharray", "6,4");
             line.classList.add('grid-line');
             this.svg.appendChild(line);
         });
@@ -255,7 +261,7 @@ export class GameGrid {
                 break;
             } else {
                 this.placeUnit(unit, nodeId);
-                await new Promise(r => setTimeout(r, 200));
+                await new Promise(r => setTimeout(r, 350));
             }
         }
 

@@ -64,7 +64,7 @@ export const INITIAL_BEASTS = [
         name: "Cyber-Scout",
         type: "Speedster",
         rarity: "UC",
-        mp: 3,
+        mp: 2,
         icon: "⚡",
         color: "#00ffcc",
         wheel: [

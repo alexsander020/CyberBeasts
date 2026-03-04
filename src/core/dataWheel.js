@@ -141,22 +141,25 @@ export class DataWheel {
             this.draw(unit.wheel);
 
             // Reset rotation
-            this.container.style.transition = 'none';
-            this.container.style.transform = 'rotate(0deg)';
+            this.canvas.style.transition = 'none';
+            this.canvas.style.transform = 'rotate(0deg)';
 
             // Force reflow
-            void this.container.offsetWidth;
+            void this.canvas.offsetWidth;
 
-            // Spin with dramatic easing
-            this.container.style.transition = 'transform 3.5s cubic-bezier(0.2, 0, 0.05, 1)';
-            const randomDegree = 1800 + Math.floor(Math.random() * 720);
-            this.container.style.transform = `rotate(${randomDegree}deg)`;
+            // Spin with custom mechanical easing
+            this.canvas.style.transition = 'transform 4s cubic-bezier(0.1, 0.85, 0.2, 1.05)';
+            const randomDegree = 2880 + Math.floor(Math.random() * 720);
+            this.canvas.style.transform = `rotate(${randomDegree}deg)`;
 
             // Add spinning class for glow
             this.container.classList.add('wheel-spinning');
+            const marker = document.getElementById('wheel-marker');
+            if (marker) marker.classList.add('marker-spinning');
 
             setTimeout(() => {
                 this.container.classList.remove('wheel-spinning');
+                if (marker) marker.classList.remove('marker-spinning');
 
                 const finalDegree = randomDegree % 360;
                 const normalized = (360 - (finalDegree - 90)) % 360;
@@ -171,13 +174,13 @@ export class DataWheel {
                 this.container.classList.add('combat-impact');
 
                 setTimeout(() => {
-                    this.container.style.transition = 'none';
-                    this.container.style.transform = 'rotate(0deg)';
+                    this.canvas.style.transition = 'none';
+                    this.canvas.style.transform = 'rotate(0deg)';
                     this.resultText.className = '';
                     this.container.classList.remove('combat-impact');
                     resolve(result);
-                }, 1200);
-            }, 3600);
+                }, 1400);
+            }, 4100);
         });
     }
 
@@ -260,32 +263,44 @@ export class DataWheel {
             const colors = this.segmentColors[segment.type];
 
             // Draw segment with gradient
-            const grad = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius);
+            const grad = ctx.createRadialGradient(centerX, centerY, radius * 0.1, centerX, centerY, radius);
             grad.addColorStop(0, colors.gradient[0]);
-            grad.addColorStop(0.4, colors.fill);
-            grad.addColorStop(1, colors.gradient[1]);
+            grad.addColorStop(0.7, colors.fill);
+            grad.addColorStop(1, '#050510');
 
             ctx.beginPath();
             ctx.moveTo(centerX, centerY);
             ctx.arc(centerX, centerY, radius, startAngle, startAngle + angle);
             ctx.fillStyle = grad;
+            ctx.shadowColor = colors.glow;
+            ctx.shadowBlur = 10;
             ctx.fill();
+            ctx.shadowBlur = 0; // reset
 
-            // Segment border
+            // Deep separator lines
             ctx.beginPath();
             ctx.moveTo(centerX, centerY);
-            ctx.arc(centerX, centerY, radius, startAngle, startAngle + angle);
-            ctx.closePath();
-            ctx.strokeStyle = 'rgba(0, 0, 0, 0.6)';
-            ctx.lineWidth = 2;
+            ctx.lineTo(centerX + Math.cos(startAngle) * radius, centerY + Math.sin(startAngle) * radius);
+            ctx.strokeStyle = '#020205';
+            ctx.lineWidth = 4;
             ctx.stroke();
 
-            // Glow outer edge
+            // Inter-segment highlight
             ctx.beginPath();
-            ctx.arc(centerX, centerY, radius - 1, startAngle + 0.02, startAngle + angle - 0.02);
+            ctx.moveTo(centerX, centerY);
+            ctx.lineTo(centerX + Math.cos(startAngle) * radius, centerY + Math.sin(startAngle) * radius);
             ctx.strokeStyle = colors.glow;
-            ctx.lineWidth = 2;
-            ctx.globalAlpha = 0.4;
+            ctx.lineWidth = 1;
+            ctx.globalAlpha = 0.5;
+            ctx.stroke();
+            ctx.globalAlpha = 1;
+
+            // Glow outer edge inside
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius * 0.9, startAngle + 0.05, startAngle + angle - 0.05);
+            ctx.strokeStyle = colors.glow;
+            ctx.lineWidth = 3;
+            ctx.globalAlpha = 0.6;
             ctx.stroke();
             ctx.globalAlpha = 1;
 
@@ -329,26 +344,40 @@ export class DataWheel {
             startAngle += angle;
         });
 
-        // Center circle decoration
+        // Center circle decoration with metallic look
         ctx.beginPath();
-        ctx.arc(centerX, centerY, 18, 0, Math.PI * 2);
-        ctx.fillStyle = '#0a0a1a';
+        ctx.arc(centerX, centerY, 24, 0, Math.PI * 2);
+        ctx.fillStyle = '#111122';
+        ctx.shadowColor = '#00F2FF';
+        ctx.shadowBlur = 15;
         ctx.fill();
-        ctx.strokeStyle = '#fff';
-        ctx.lineWidth = 2;
+        ctx.shadowBlur = 0;
+
+        ctx.strokeStyle = '#00F2FF';
+        ctx.lineWidth = 3;
         ctx.stroke();
 
-        // Inner ring
+        // Inner core
         ctx.beginPath();
-        ctx.arc(centerX, centerY, 12, 0, Math.PI * 2);
-        ctx.fillStyle = 'var(--cyan-neon)';
+        ctx.arc(centerX, centerY, 10, 0, Math.PI * 2);
+        ctx.fillStyle = '#00F2FF';
+        ctx.shadowColor = '#00F2FF';
+        ctx.shadowBlur = 10;
         ctx.fill();
+        ctx.shadowBlur = 0;
 
-        // Outer ring glow
+        // Outer ring frame
         ctx.beginPath();
         ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
-        ctx.lineWidth = 4;
+        ctx.strokeStyle = '#111';
+        ctx.lineWidth = 8;
+        ctx.stroke();
+
+        // Outer thin neon ring
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, radius - 2, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(0, 242, 255, 0.6)';
+        ctx.lineWidth = 2;
         ctx.stroke();
     }
 

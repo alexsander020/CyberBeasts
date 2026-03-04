@@ -165,7 +165,13 @@ body::after {
     cursor: pointer;
     border: 22px solid transparent;
     background-clip: padding-box;
-    transition: box-shadow 0.3s ease;
+    transition: box-shadow 0.3s ease, background 0.3s ease, transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.grid-point:hover {
+    transform: translate(-50%, -50%) scale(1.4);
+    box-shadow: 0 0 15px white !important;
+    background: white;
 }
 
 .grid-point.entry {
@@ -293,18 +299,26 @@ body::after {
 }
 
 /* DATA FLOW ANIMATION ON LINES */
+.grid-line-glow {
+    stroke: rgba(0, 242, 255, 0.15);
+    stroke-width: 6;
+    filter: drop-shadow(0 0 5px rgba(0, 242, 255, 0.5));
+}
+
 .grid-line {
-    animation: data-flow 3s linear infinite;
-    stroke-dasharray: 6, 4;
+    stroke: rgba(0, 242, 255, 0.8);
+    stroke-width: 2;
+    stroke-dasharray: 4, 8;
+    animation: data-flow 2s linear infinite;
 }
 
 @keyframes data-flow {
     from {
-        stroke-dashoffset: 0;
+        stroke-dashoffset: 24;
     }
 
     to {
-        stroke-dashoffset: -20;
+        stroke-dashoffset: 0;
     }
 }
 
@@ -334,7 +348,7 @@ body::after {
     height: 50px;
     transform: translate(-50%, -50%);
     z-index: 10;
-    transition: all 0.4s ease;
+    transition: left 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), top 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s ease, filter 0.4s ease;
     pointer-events: none;
 }
 
@@ -909,13 +923,28 @@ body::after {
     top: -22px;
     left: 50%;
     transform: translateX(-50%);
+    transform-origin: top center;
     width: 0;
     height: 0;
     border-left: 18px solid transparent;
     border-right: 18px solid transparent;
     border-top: 35px solid white;
-    filter: drop-shadow(0 0 10px var(--cyan-neon));
+    filter: drop-shadow(0 0 15px var(--cyan-neon));
     z-index: 100;
+}
+
+.marker-spinning {
+    animation: marker-tick 0.1s linear infinite alternate;
+}
+
+@keyframes marker-tick {
+    0% {
+        transform: translateX(-50%) rotate(0deg) translateY(0);
+    }
+
+    100% {
+        transform: translateX(-50%) rotate(-10deg) translateY(-3px);
+    }
 }
 
 #battle-log {
@@ -945,11 +974,11 @@ body::after {
 }
 
 .wheel-result-show {
-    font-size: 2.2rem;
+    font-size: 2.5rem;
     font-weight: 900;
-    text-shadow: 0 0 20px currentColor;
+    text-shadow: 0 0 30px currentColor, 0 0 15px currentColor;
     animation: result-pop 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-    letter-spacing: 2px;
+    letter-spacing: 3px;
 }
 
 .wheel-result-final {
