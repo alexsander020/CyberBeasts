@@ -15,7 +15,7 @@ export class CyberBeast {
         this.name = data.name;
         this.type = data.type || 'Standard';
         this.rarity = data.rarity || 'Common';
-        this.mp = data.mp || 2;
+        this.mp = data.mp || 1;
         this.icon = data.icon || '👾';
         this.color = data.color || '#fff';
         this.wheel = data.wheel || [];
@@ -36,7 +36,7 @@ export const INITIAL_BEASTS = [
         name: "Megabit Dragon",
         type: "Striker",
         rarity: "EX",
-        mp: 2,
+        mp: 1,
         icon: "🐉",
         color: "#ff3333",
         wheel: [
@@ -64,7 +64,7 @@ export const INITIAL_BEASTS = [
         name: "Cyber-Scout",
         type: "Speedster",
         rarity: "UC",
-        mp: 2,
+        mp: 1,
         icon: "⚡",
         color: "#00ffcc",
         wheel: [
