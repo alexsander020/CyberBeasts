@@ -227,8 +227,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 break;
             }
             case 'block': {
-                // Block central nodes for 1 turn
-                const centralNodes = [3, 4, 5, 6, 7];
+                // Block central nodes for 1 turn (including new forwards)
+                const centralNodes = [3, 4, 5, 6, 7, 11, 12, 13, 14, 15, 16];
                 const emptyNodes = centralNodes.filter(id => !grid.units.has(id));
                 if (emptyNodes.length > 0) {
                     const target = emptyNodes[Math.floor(Math.random() * emptyNodes.length)];

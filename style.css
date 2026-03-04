@@ -137,6 +137,17 @@ body::after {
         radial-gradient(circle at center, rgba(0, 242, 255, 0.05) 0%, transparent 60%);
     background-size: 20px 20px, 20px 20px, 100% 100%;
     background-position: center;
+    animation: grid-scan 12s linear infinite;
+}
+
+@keyframes grid-scan {
+    from {
+        background-position: 0 0, 0 0, center;
+    }
+
+    to {
+        background-position: 0 60px, 0 0, center;
+    }
 }
 
 /* STATUS PANEL */

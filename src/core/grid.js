@@ -21,8 +21,8 @@ export class GameGrid {
 
     init() {
         this.nodes = [
-            { id: 0, x: 30, y: 90, type: 'entry', team: 'player' },
-            { id: 1, x: 70, y: 90, type: 'entry', team: 'player' },
+            { id: 0, x: 25, y: 85, type: 'entry', team: 'player' },
+            { id: 1, x: 75, y: 85, type: 'entry', team: 'player' },
             { id: 2, x: 50, y: 95, type: 'core', team: 'player' },
 
             { id: 3, x: 10, y: 50, type: 'node' },
@@ -31,16 +31,38 @@ export class GameGrid {
             { id: 6, x: 70, y: 50, type: 'node' },
             { id: 7, x: 90, y: 50, type: 'node' },
 
-            { id: 8, x: 30, y: 10, type: 'entry', team: 'enemy' },
-            { id: 9, x: 70, y: 10, type: 'entry', team: 'enemy' },
-            { id: 10, x: 50, y: 5, type: 'core', team: 'enemy' }
+            { id: 8, x: 25, y: 15, type: 'entry', team: 'enemy' },
+            { id: 9, x: 75, y: 15, type: 'entry', team: 'enemy' },
+            { id: 10, x: 50, y: 5, type: 'core', team: 'enemy' },
+
+            { id: 11, x: 20, y: 68, type: 'node' }, // Player left forward
+            { id: 12, x: 50, y: 68, type: 'node' }, // Player center forward
+            { id: 13, x: 80, y: 68, type: 'node' }, // Player right forward
+
+            { id: 14, x: 20, y: 32, type: 'node' }, // Enemy left forward
+            { id: 15, x: 50, y: 32, type: 'node' }, // Enemy center forward
+            { id: 16, x: 80, y: 32, type: 'node' }  // Enemy right forward
         ];
 
         this.connections = [
-            [0, 3], [0, 4], [1, 6], [1, 7],
+            // Core connections
+            [2, 0], [2, 1], [2, 12],
+            [10, 8], [10, 9], [10, 15],
+
+            // Player side to forwards
+            [0, 11], [0, 12], [1, 12], [1, 13],
+
+            // Player forwards to mid
+            [11, 3], [11, 4], [12, 4], [12, 5], [12, 6], [13, 6], [13, 7],
+
+            // Mid horizontal links
             [3, 4], [4, 5], [5, 6], [6, 7],
-            [8, 3], [8, 4], [9, 6], [9, 7],
-            [4, 10], [5, 10], [6, 10], [2, 4], [2, 5], [2, 6]
+
+            // Mid to Enemy forwards
+            [3, 14], [4, 14], [4, 15], [5, 15], [6, 15], [6, 16], [7, 16],
+
+            // Enemy forwards to Enemy side
+            [14, 8], [15, 8], [15, 9], [16, 9]
         ];
 
         this.render();
