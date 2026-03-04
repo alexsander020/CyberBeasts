@@ -123,6 +123,11 @@ export class GameGrid {
             }
             this.selectedUnit = unitAtNode;
             this.showValidMoves(node.id, unitAtNode.mp);
+
+            // Add visual selection highlight
+            const unitEl = document.getElementById(`unit-${unitAtNode.uuid}`);
+            if (unitEl) unitEl.classList.add('unit-selected');
+
             statusPanel.innerHTML = `> SELECIONADO: ${unitAtNode.name}<br>> MP: ${unitAtNode.mp} | TIPO: ${unitAtNode.type}<br>> RARIDADE: ${unitAtNode.rarity}`;
             return;
         }
@@ -276,6 +281,12 @@ export class GameGrid {
     async startCombat(attacker, defender) {
         const winner = await this.wheel.fullBattle(attacker, defender);
         console.log(`Resultado do combate: ${winner}`);
+
+        const statusPanel = document.getElementById('status-panel');
+        if (winner === 'attacker_wins') statusPanel.innerHTML = `> 💥 COMBATE: ${attacker.name} destruiu ${defender.name}!`;
+        else if (winner === 'defender_wins') statusPanel.innerHTML = `> 💥 COMBATE: ${defender.name} repeliu ${attacker.name}!`;
+        else statusPanel.innerHTML = `> 🛡️ COMBATE: Empate ou Defesa.`;
+
         return winner;
     }
 
@@ -286,6 +297,7 @@ export class GameGrid {
     }
 
     clearHighlights() {
+        // Clear nodes
         this.nodes.forEach(n => {
             const el = document.querySelector(`.grid-point[data-id="${n.id}"]`);
             if (el && !el.classList.contains('blocked-node')) {
@@ -293,6 +305,11 @@ export class GameGrid {
                 el.style.boxShadow = n.type === 'core' ? `0 0 15px ${coreColor}` : '0 0 8px var(--cyan-neon)';
                 el.classList.remove('valid-move');
             }
+        });
+
+        // Clear unit selections
+        document.querySelectorAll('.unit-selected').forEach(el => {
+            el.classList.remove('unit-selected');
         });
     }
 

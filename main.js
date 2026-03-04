@@ -287,4 +287,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const countEl = document.getElementById('bench-count');
         if (countEl) countEl.innerText = `${state.playerBench.length} unidade(s) no banco`;
     }
+
+    // ── Global Keyboard Shortcuts ──
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            if (tutorialModal) tutorialModal.style.display = 'none';
+            if (surrenderModal) surrenderModal.style.display = 'none';
+            if (platesModal) platesModal.style.display = 'none';
+        }
+    });
+
 });

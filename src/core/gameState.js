@@ -41,17 +41,21 @@ export class GameState {
     }
 
     updateDataCenterUI() {
+        const isFull = this.dataCenter.length >= 2;
         for (let i = 0; i < 2; i++) {
             const slot = document.getElementById(`dc-${i}`);
             if (slot) {
                 const unit = this.dataCenter[i];
                 if (unit) {
                     slot.classList.add('occupied');
+                    if (isFull) slot.classList.add('dc-alert');
+                    else slot.classList.remove('dc-alert');
+
                     slot.innerHTML = unit.icon || '👾';
                     slot.title = `${unit.name} — Aguardando reboot`;
                     slot.style.borderColor = unit.color || 'var(--cyber-pink)';
                 } else {
-                    slot.classList.remove('occupied');
+                    slot.classList.remove('occupied', 'dc-alert');
                     slot.innerHTML = '';
                     slot.title = 'Slot vazio — unidades deletadas vão para cá';
                     slot.style.borderColor = '';

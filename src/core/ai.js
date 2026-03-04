@@ -28,7 +28,7 @@ export class CyberAI {
             if (!this.grid.units.has(unit.currentNode)) continue; // Unit was deleted during combat
             statusPanel.innerHTML = `> 🤖 IA movendo: ${unit.name}`;
             await this.calculateAggressiveMove(unit);
-            await new Promise(r => setTimeout(r, 800));
+            await new Promise(r => setTimeout(r, 1400));
         }
 
         // 3. Normal spawning at end of turn
@@ -47,7 +47,7 @@ export class CyberAI {
                 const unit = this.gameState.enemyBench.shift();
                 this.grid.placeUnit(unit, entryPoints[0]);
                 console.log(`IA compilou ${unit.name} no nodo ${entryPoints[0]}`);
-                await new Promise(r => setTimeout(r, 800));
+                await new Promise(r => setTimeout(r, 1400));
             }
         }
     }

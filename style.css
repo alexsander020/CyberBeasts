@@ -419,6 +419,23 @@ body::after {
     pointer-events: none;
 }
 
+/* UNIT SELECTED VISUAL */
+.unit-selected .base {
+    box-shadow: 0 0 25px white !important;
+    border-color: white !important;
+    animation: unit-breathe 1s infinite alternate;
+}
+
+@keyframes unit-breathe {
+    from {
+        transform: scale(1);
+    }
+
+    to {
+        transform: scale(1.15);
+    }
+}
+
 /* SPAWN ANIMATION */
 .unit-disc.spawning {
     animation: unit-spawn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
@@ -1092,6 +1109,11 @@ body::after {
     animation: dc-pulse 2s infinite alternate;
 }
 
+.dc-alert {
+    animation: dc-alert-flash 0.5s infinite alternate !important;
+    border-color: #ff0000 !important;
+}
+
 @keyframes dc-pulse {
     from {
         box-shadow: 0 0 10px var(--cyber-pink);
@@ -1099,6 +1121,18 @@ body::after {
 
     to {
         box-shadow: 0 0 25px var(--cyber-pink);
+    }
+}
+
+@keyframes dc-alert-flash {
+    from {
+        background: rgba(255, 0, 0, 0.2);
+        box-shadow: 0 0 10px red;
+    }
+
+    to {
+        background: rgba(255, 0, 0, 0.5);
+        box-shadow: 0 0 35px red;
     }
 }
 
